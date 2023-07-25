@@ -1,6 +1,6 @@
-module github.com/RaymondCode/simple-demo
+module github.com/stickit/douyin
 
-go 1.17
+go 1.20
 
 require (
 	github.com/gavv/httpexpect/v2 v2.8.0
