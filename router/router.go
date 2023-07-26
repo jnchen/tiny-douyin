@@ -3,11 +3,20 @@ package router
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/stickit/douyin/controller"
+	"net/http"
 )
 
 func InitRouter(r *gin.Engine) {
 	// public directory is used to serve static resources
 	r.Static("/static", "./public")
+	r.LoadHTMLGlob("templates/*")
+
+	// home page
+	r.GET("/", func(c *gin.Context) {
+		c.HTML(http.StatusOK, "index.html", gin.H{
+			"title": "Main website",
+		})
+	})
 
 	apiRouter := r.Group("/douyin")
 
