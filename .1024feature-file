@@ -30,3 +30,4 @@ fileChangeLogs:
   - service
   - simple-demo
   - douyin
+  - router/router.go
