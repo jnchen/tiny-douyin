@@ -1,4 +1,4 @@
-run_command: go build && ./douyin
+run_command: go build -o bin/douyin && ./bin/douyin
 debug:
   support: true
   launch:

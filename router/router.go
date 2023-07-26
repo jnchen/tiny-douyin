@@ -1,8 +1,8 @@
 package router
 
 import (
-	"github.com/stickit/douyin/controller"
 	"github.com/gin-gonic/gin"
+	"github.com/stickit/douyin/controller"
 )
 
 func InitRouter(r *gin.Engine) {
