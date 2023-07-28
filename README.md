@@ -13,6 +13,7 @@ go build && ./douyin
 - 配置管理 `viper`
 - ORM `gorm`
 - Web `Gin`
+- DbDriver `mysql`
 
 ### 功能说明
 
