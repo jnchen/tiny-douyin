@@ -9,6 +9,11 @@
 go build && ./douyin
 ```
 
+### 主要依赖库
+- 配置管理 `viper`
+- ORM `gorm`
+- Web `Gin`
+
 ### 功能说明
 
 接口功能不完善，仅作为示例

@@ -1,8 +1,8 @@
 package router
 
 import (
+	"douyin/controller"
 	"github.com/gin-gonic/gin"
-	"github.com/stickit/douyin/controller"
 	"net/http"
 )
 

@@ -1,9 +1,9 @@
 package service
 
 import (
+	"douyin/controller"
 	"encoding/json"
 	"fmt"
-	"github.com/stickit/douyin/controller"
 	"io"
 	"net"
 	"sync"

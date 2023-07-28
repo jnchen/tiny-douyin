@@ -1,12 +1,17 @@
 package main
 
 import (
+	"douyin/config"
+	"douyin/model"
+	"douyin/router"
+	"douyin/service"
 	"github.com/gin-gonic/gin"
-	"github.com/stickit/douyin/router"
-	"github.com/stickit/douyin/service"
 )
 
 func main() {
+	// 初始化Database
+	model.InitDatabase(config.Conf.MySQLConfig)
+
 	go service.RunMessageServer()
 
 	r := gin.Default()
