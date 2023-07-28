@@ -9,7 +9,7 @@ import (
 
 func UserExists(username string) (bool, error) {
 	var count int64
-	result := db.DB.Where("username = ?", username).Count(&count)
+	result := db.DB.Model(&db.User{}).Where("username = ?", username).Count(&count)
 	if nil != result.Error {
 		return false, result.Error
 	}
@@ -26,6 +26,7 @@ func UserCreate(username string, password string) (*db.User, error) {
 	}
 	user := db.User{
 		Name:      username,
+		Username:  username,
 		Password:  passwordMd5,
 		CreatedAt: time.Time{},
 		UpdatedAt: time.Time{},

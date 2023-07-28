@@ -12,12 +12,16 @@ import (
 // c: http上下文
 // return: 用户id和用户token
 func Register(c *gin.Context) {
-	// 用户名
-	username := c.Query("username")
-	// 密码
-	password := c.Query("password")
+	var req model.UserRegisterRequest
+	err := c.ShouldBindJSON(&req)
+	if nil != err {
+		c.JSON(http.StatusOK, model.UserLoginResponse{
+			Response: model.Response{StatusCode: 1, StatusMsg: err.Error()},
+		})
+		return
+	}
 
-	exist, err := service.UserExists(username)
+	exist, err := service.UserExists(req.UserName)
 	if err != nil {
 		c.JSON(http.StatusOK, model.UserLoginResponse{
 			Response: model.Response{StatusCode: 1, StatusMsg: err.Error()},
@@ -32,7 +36,7 @@ func Register(c *gin.Context) {
 		return
 	}
 
-	newUser, err := service.UserCreate(username, password)
+	newUser, err := service.UserCreate(req.UserName, req.Password)
 	if err != nil {
 		c.JSON(http.StatusOK, model.UserLoginResponse{
 			Response: model.Response{StatusCode: 1, StatusMsg: "注册失败"},
@@ -56,10 +60,16 @@ func Register(c *gin.Context) {
 }
 
 func Login(c *gin.Context) {
-	username := c.Query("username")
-	password := c.Query("password")
+	var req model.UserLoginRequest
+	err := c.ShouldBindJSON(&req)
+	if nil != err {
+		c.JSON(http.StatusOK, model.UserLoginResponse{
+			Response: model.Response{StatusCode: 1, StatusMsg: err.Error()},
+		})
+		return
+	}
 
-	userId, err := service.UserLogin(username, password)
+	userId, err := service.UserLogin(req.UserName, req.Password)
 	if err != nil {
 		c.JSON(http.StatusOK, model.UserLoginResponse{
 			Response: model.Response{StatusCode: 1, StatusMsg: "Login Error"},

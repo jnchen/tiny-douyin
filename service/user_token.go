@@ -4,6 +4,8 @@ import (
 	"douyin/db"
 	"douyin/model"
 	"douyin/util"
+	"errors"
+	"gorm.io/gorm"
 	"time"
 )
 
@@ -34,6 +36,16 @@ func CheckLogin(token string) (*model.User, bool) {
 		return nil, false
 	}
 
+	if time.Now().After(userToken.ExpireAt) {
+		delCond := db.UserToken{
+			Model: gorm.Model{
+				ID: userToken.ID,
+			},
+		}
+		db.DB.Delete(&delCond)
+		return nil, false
+	}
+
 	var userInfo db.User
 	result = db.DB.Where("id= ?", userToken.UserId).First(&userInfo)
 	if result.Error != nil {
@@ -53,5 +65,18 @@ func CheckLogin(token string) (*model.User, bool) {
 }
 
 func UserLogin(username string, password string) (int64, error) {
-	return 0, nil
+	passwordMd5, err := util.Md5(password)
+	if err != nil {
+		return 0, err
+	}
+	var user db.User
+	result := db.DB.Where("username = ? and password = ?", username, passwordMd5).First(&user)
+	if nil != result.Error {
+		return 0, result.Error
+	}
+	if 0 == result.RowsAffected {
+		return 0, errors.New("用户名或密码错误")
+	}
+
+	return user.ID, nil
 }
