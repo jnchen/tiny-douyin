@@ -1,11 +1,41 @@
 package service
 
-import "douyin/db"
+import (
+	"douyin/db"
+	"douyin/util"
+	"errors"
+	"time"
+)
 
 func UserExists(username string) (bool, error) {
-	return true, nil
+	var count int64
+	result := db.DB.Where("username = ?", username).Count(&count)
+	if nil != result.Error {
+		return false, result.Error
+	}
+	if 0 == result.RowsAffected {
+		return false, nil
+	}
+	return count > 0, nil
 }
 
 func UserCreate(username string, password string) (*db.User, error) {
-	return &db.User{}, nil
+	passwordMd5, err := util.Md5(password)
+	if err != nil {
+		return nil, err
+	}
+	user := db.User{
+		Name:      username,
+		Password:  passwordMd5,
+		CreatedAt: time.Time{},
+		UpdatedAt: time.Time{},
+	}
+	result := db.DB.Create(&user)
+	if nil != result.Error {
+		return nil, result.Error
+	}
+	if 0 == result.RowsAffected {
+		return nil, errors.New("sql执行失败")
+	}
+	return &user, nil
 }

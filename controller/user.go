@@ -3,36 +3,10 @@ package controller
 import (
 	"douyin/model"
 	"douyin/service"
-	"douyin/util"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"net/http"
-	"time"
 )
-
-// usersLoginInfo use map to store user info, and key is username+password for demo
-// user data will be cleared every time the server starts
-// test data: username=zhanglei, password=douyin
-var usersLoginInfo = map[string]model.User{
-	"zhangleidouyin": {
-		Id:            1,
-		Name:          "zhanglei",
-		FollowCount:   10,
-		FollowerCount: 5,
-		IsFollow:      true,
-	},
-}
-
-type UserLoginResponse struct {
-	model.Response
-	UserId int64  `json:"user_id,omitempty"`
-	Token  string `json:"token"`
-}
-
-type UserResponse struct {
-	model.Response
-	User model.User `json:"user"`
-}
 
 // Register 用户注册
 // c: http上下文
@@ -43,58 +17,38 @@ func Register(c *gin.Context) {
 	// 密码
 	password := c.Query("password")
 
-	token := util.UUIDNoLine()
-
 	exist, err := service.UserExists(username)
 	if err != nil {
-		c.JSON(http.StatusOK, UserLoginResponse{
+		c.JSON(http.StatusOK, model.UserLoginResponse{
 			Response: model.Response{StatusCode: 1, StatusMsg: err.Error()},
 		})
 		return
 	}
 
 	if exist {
-		c.JSON(http.StatusOK, UserLoginResponse{
+		c.JSON(http.StatusOK, model.UserLoginResponse{
 			Response: model.Response{StatusCode: 1, StatusMsg: "User already exist"},
 		})
 		return
 	}
 
-	passwordMd5, err := util.Md5(password)
+	newUser, err := service.UserCreate(username, password)
 	if err != nil {
-		c.JSON(http.StatusOK, UserLoginResponse{
-			Response: model.Response{StatusCode: 1, StatusMsg: "密码错误"},
-		})
-		return
-	}
-
-	newUser, err := service.UserCreate(username, passwordMd5)
-	if err != nil {
-		c.JSON(http.StatusOK, UserLoginResponse{
+		c.JSON(http.StatusOK, model.UserLoginResponse{
 			Response: model.Response{StatusCode: 1, StatusMsg: "注册失败"},
 		})
 		return
 	}
 
-	timeDuration, err := time.ParseDuration("4h")
+	token, err := service.UserTokenCreate(newUser.ID)
 	if err != nil {
-		c.JSON(http.StatusOK, UserLoginResponse{
+		c.JSON(http.StatusOK, model.UserLoginResponse{
 			Response: model.Response{StatusCode: 1, StatusMsg: "生成Token失败"},
 		})
 		return
 	}
 
-	expireAt := time.Now().Add(timeDuration)
-
-	err = service.UserTokenCreate(newUser.ID, token, expireAt)
-	if err != nil {
-		c.JSON(http.StatusOK, UserLoginResponse{
-			Response: model.Response{StatusCode: 1, StatusMsg: "生成Token失败"},
-		})
-		return
-	}
-
-	c.JSON(http.StatusOK, UserLoginResponse{
+	c.JSON(http.StatusOK, model.UserLoginResponse{
 		Response: model.Response{StatusCode: 0},
 		UserId:   newUser.ID,
 		Token:    token,
@@ -105,19 +59,27 @@ func Login(c *gin.Context) {
 	username := c.Query("username")
 	password := c.Query("password")
 
-	token := username + password
-
-	if user, exist := service.CheckLogin(token); exist {
-		c.JSON(http.StatusOK, UserLoginResponse{
-			Response: model.Response{StatusCode: 0},
-			UserId:   user.Id,
-			Token:    token,
+	userId, err := service.UserLogin(username, password)
+	if err != nil {
+		c.JSON(http.StatusOK, model.UserLoginResponse{
+			Response: model.Response{StatusCode: 1, StatusMsg: "Login Error"},
 		})
-	} else {
-		c.JSON(http.StatusOK, UserLoginResponse{
-			Response: model.Response{StatusCode: 1, StatusMsg: "User doesn't exist"},
-		})
+		return
 	}
+
+	token, err := service.UserTokenCreate(userId)
+	if err != nil {
+		c.JSON(http.StatusOK, model.UserLoginResponse{
+			Response: model.Response{StatusCode: 1, StatusMsg: "Login Error"},
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, model.UserLoginResponse{
+		Response: model.Response{StatusCode: 0},
+		UserId:   userId,
+		Token:    token,
+	})
 }
 
 func UserInfo(c *gin.Context) {
@@ -126,12 +88,12 @@ func UserInfo(c *gin.Context) {
 	user, exist := service.CheckLogin(token)
 	fmt.Println(user)
 	if exist {
-		c.JSON(http.StatusOK, UserResponse{
+		c.JSON(http.StatusOK, model.UserResponse{
 			Response: model.Response{StatusCode: 0},
-			User:     model.User{},
+			User:     *user,
 		})
 	} else {
-		c.JSON(http.StatusOK, UserResponse{
+		c.JSON(http.StatusOK, model.UserResponse{
 			Response: model.Response{StatusCode: 1, StatusMsg: "User doesn't exist"},
 		})
 	}
