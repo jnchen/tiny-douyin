@@ -1,7 +1,7 @@
 mysql:
-  host: "localhost"
-  port: 3306
+  host: 172.16.32.31
+  port: 51829
   options: "charset=utf8mb4&parseTime=True&loc=Local"
   dbname: "douyin"
   username: "root"
-  password: "CAOJINGCHEN45a"
+  password: "RHYJvaDS"
