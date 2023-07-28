@@ -2,7 +2,7 @@ package main
 
 import (
 	"douyin/config"
-	"douyin/model"
+	"douyin/db"
 	"douyin/router"
 	"douyin/service"
 	"github.com/gin-gonic/gin"
@@ -10,7 +10,7 @@ import (
 
 func main() {
 	// 初始化Database
-	model.InitDatabase(config.Conf.MySQLConfig)
+	db.InitDatabase(config.Conf.MySQLConfig)
 
 	go service.RunMessageServer()
 

@@ -1,4 +1,4 @@
-package model
+package db
 
 import (
 	"douyin/config"
@@ -31,6 +31,11 @@ func InitDatabase(config *config.MySQLConfig) {
 	err = DB.Set("gorm:table_options", " COMMENT='用户表'").AutoMigrate(&User{})
 	if err != nil {
 		fmt.Println("初始化用户表失败", err)
+		return
+	}
+	err = DB.Set("gorm:table_options", " COMMENT='用户登录状态表'").AutoMigrate(&UserToken{})
+	if err != nil {
+		fmt.Println("初始化用户登录状态表失败", err)
 		return
 	}
 	err = DB.Set("gorm:table_options", " COMMENT='视频表'").AutoMigrate(&Video{})

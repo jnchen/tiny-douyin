@@ -1,15 +1,19 @@
 package controller
 
 import (
+	"douyin/model"
+	"douyin/service"
+	"douyin/util"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"net/http"
-	"sync/atomic"
+	"time"
 )
 
 // usersLoginInfo use map to store user info, and key is username+password for demo
 // user data will be cleared every time the server starts
 // test data: username=zhanglei, password=douyin
-var usersLoginInfo = map[string]User{
+var usersLoginInfo = map[string]model.User{
 	"zhangleidouyin": {
 		Id:            1,
 		Name:          "zhanglei",
@@ -19,42 +23,82 @@ var usersLoginInfo = map[string]User{
 	},
 }
 
-var userIdSequence = int64(1)
-
 type UserLoginResponse struct {
-	Response
+	model.Response
 	UserId int64  `json:"user_id,omitempty"`
 	Token  string `json:"token"`
 }
 
 type UserResponse struct {
-	Response
-	User User `json:"user"`
+	model.Response
+	User model.User `json:"user"`
 }
 
+// Register 用户注册
+// c: http上下文
+// return: 用户id和用户token
 func Register(c *gin.Context) {
+	// 用户名
 	username := c.Query("username")
+	// 密码
 	password := c.Query("password")
 
-	token := username + password
+	token := util.UUIDNoLine()
 
-	if _, exist := usersLoginInfo[token]; exist {
+	exist, err := service.UserExists(username)
+	if err != nil {
 		c.JSON(http.StatusOK, UserLoginResponse{
-			Response: Response{StatusCode: 1, StatusMsg: "User already exist"},
+			Response: model.Response{StatusCode: 1, StatusMsg: err.Error()},
 		})
-	} else {
-		atomic.AddInt64(&userIdSequence, 1)
-		newUser := User{
-			Id:   userIdSequence,
-			Name: username,
-		}
-		usersLoginInfo[token] = newUser
-		c.JSON(http.StatusOK, UserLoginResponse{
-			Response: Response{StatusCode: 0},
-			UserId:   userIdSequence,
-			Token:    username + password,
-		})
+		return
 	}
+
+	if exist {
+		c.JSON(http.StatusOK, UserLoginResponse{
+			Response: model.Response{StatusCode: 1, StatusMsg: "User already exist"},
+		})
+		return
+	}
+
+	passwordMd5, err := util.Md5(password)
+	if err != nil {
+		c.JSON(http.StatusOK, UserLoginResponse{
+			Response: model.Response{StatusCode: 1, StatusMsg: "密码错误"},
+		})
+		return
+	}
+
+	newUser, err := service.UserCreate(username, passwordMd5)
+	if err != nil {
+		c.JSON(http.StatusOK, UserLoginResponse{
+			Response: model.Response{StatusCode: 1, StatusMsg: "注册失败"},
+		})
+		return
+	}
+
+	timeDuration, err := time.ParseDuration("4h")
+	if err != nil {
+		c.JSON(http.StatusOK, UserLoginResponse{
+			Response: model.Response{StatusCode: 1, StatusMsg: "生成Token失败"},
+		})
+		return
+	}
+
+	expireAt := time.Now().Add(timeDuration)
+
+	err = service.UserTokenCreate(newUser.ID, token, expireAt)
+	if err != nil {
+		c.JSON(http.StatusOK, UserLoginResponse{
+			Response: model.Response{StatusCode: 1, StatusMsg: "生成Token失败"},
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, UserLoginResponse{
+		Response: model.Response{StatusCode: 0},
+		UserId:   newUser.ID,
+		Token:    token,
+	})
 }
 
 func Login(c *gin.Context) {
@@ -63,15 +107,15 @@ func Login(c *gin.Context) {
 
 	token := username + password
 
-	if user, exist := usersLoginInfo[token]; exist {
+	if user, exist := service.CheckLogin(token); exist {
 		c.JSON(http.StatusOK, UserLoginResponse{
-			Response: Response{StatusCode: 0},
+			Response: model.Response{StatusCode: 0},
 			UserId:   user.Id,
 			Token:    token,
 		})
 	} else {
 		c.JSON(http.StatusOK, UserLoginResponse{
-			Response: Response{StatusCode: 1, StatusMsg: "User doesn't exist"},
+			Response: model.Response{StatusCode: 1, StatusMsg: "User doesn't exist"},
 		})
 	}
 }
@@ -79,14 +123,16 @@ func Login(c *gin.Context) {
 func UserInfo(c *gin.Context) {
 	token := c.Query("token")
 
-	if user, exist := usersLoginInfo[token]; exist {
+	user, exist := service.CheckLogin(token)
+	fmt.Println(user)
+	if exist {
 		c.JSON(http.StatusOK, UserResponse{
-			Response: Response{StatusCode: 0},
-			User:     user,
+			Response: model.Response{StatusCode: 0},
+			User:     model.User{},
 		})
 	} else {
 		c.JSON(http.StatusOK, UserResponse{
-			Response: Response{StatusCode: 1, StatusMsg: "User doesn't exist"},
+			Response: model.Response{StatusCode: 1, StatusMsg: "User doesn't exist"},
 		})
 	}
 }
