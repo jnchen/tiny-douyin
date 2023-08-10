@@ -13,7 +13,7 @@ func UserExists(username string) (bool, error) {
 	if nil != result.Error {
 		return false, result.Error
 	}
-	if 0 == result.RowsAffected {
+	if result.RowsAffected == 0 {
 		return false, nil
 	}
 	return count > 0, nil
@@ -35,7 +35,7 @@ func UserCreate(username string, password string) (*db.User, error) {
 	if nil != result.Error {
 		return nil, result.Error
 	}
-	if 0 == result.RowsAffected {
+	if result.RowsAffected == 0 {
 		return nil, errors.New("sql执行失败")
 	}
 	return &user, nil
