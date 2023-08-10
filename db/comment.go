@@ -2,6 +2,8 @@ package db
 
 import (
 	"time"
+
+	"gorm.io/gorm"
 )
 
 // Comment 评论 用户-视频
@@ -12,4 +14,5 @@ type Comment struct {
 	Content   string    `gorm:"type:varchar(500);comment:评论内容"`
 	CreatedAt time.Time `gorm:"comment:创建时间"`
 	UpdatedAt time.Time `gorm:"comment:更新时间"`
+	DeleteAt  gorm.DeletedAt
 }
