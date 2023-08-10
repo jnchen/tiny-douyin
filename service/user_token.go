@@ -5,8 +5,9 @@ import (
 	"douyin/model"
 	"douyin/util"
 	"errors"
-	"gorm.io/gorm"
 	"time"
+
+	"gorm.io/gorm"
 )
 
 func UserTokenCreate(id int64) (string, error) {
@@ -32,7 +33,7 @@ func CheckLogin(token string) (*model.User, bool) {
 	if result.Error != nil {
 		return nil, false
 	}
-	if 0 == result.RowsAffected {
+	if result.RowsAffected == 0 {
 		return nil, false
 	}
 
@@ -47,11 +48,11 @@ func CheckLogin(token string) (*model.User, bool) {
 	}
 
 	var userInfo db.User
-	result = db.DB.Where("id= ?", userToken.UserId).First(&userInfo)
+	result = db.DB.Where("id = ?", userToken.UserId).First(&userInfo)
 	if result.Error != nil {
 		return nil, false
 	}
-	if 0 == result.RowsAffected {
+	if result.RowsAffected == 0 {
 		return nil, false
 	}
 
@@ -74,7 +75,7 @@ func UserLogin(username string, password string) (int64, error) {
 	if nil != result.Error {
 		return 0, result.Error
 	}
-	if 0 == result.RowsAffected {
+	if result.RowsAffected == 0 {
 		return 0, errors.New("用户名或密码错误")
 	}
 
