@@ -12,11 +12,11 @@ type UserResponse struct {
 }
 
 type UserRegisterRequest struct {
-	UserName string `json:"username" binding:"required,min=1,max=32"`
-	Password string `json:"password" binding:"required,min=1,max=32"`
+	UserName string `json:"username" form:"username" xml:"username" binding:"required,min=1,max=32"`
+	Password string `json:"password" form:"password" xml:"password" binding:"required,min=1,max=32"`
 }
 
 type UserLoginRequest struct {
-	UserName string `json:"username" binding:"required"`
-	Password string `json:"password" binding:"required"`
+	UserName string `json:"username" form:"username" xml:"username" binding:"required"`
+	Password string `json:"password" form:"password" xml:"password" binding:"required"`
 }
