@@ -4,8 +4,9 @@ import (
 	"douyin/model"
 	"douyin/service"
 	"fmt"
-	"github.com/gin-gonic/gin"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
 )
 
 // Register 用户注册
@@ -13,7 +14,7 @@ import (
 // return: 用户id和用户token
 func Register(c *gin.Context) {
 	var req model.UserRegisterRequest
-	err := c.ShouldBindJSON(&req)
+	err := c.ShouldBind(&req)
 	if nil != err {
 		c.JSON(http.StatusOK, model.UserLoginResponse{
 			Response: model.Response{StatusCode: 1, StatusMsg: err.Error()},
@@ -61,7 +62,7 @@ func Register(c *gin.Context) {
 
 func Login(c *gin.Context) {
 	var req model.UserLoginRequest
-	err := c.ShouldBindJSON(&req)
+	err := c.ShouldBind(&req)
 	if nil != err {
 		c.JSON(http.StatusOK, model.UserLoginResponse{
 			Response: model.Response{StatusCode: 1, StatusMsg: err.Error()},
