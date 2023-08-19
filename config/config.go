@@ -2,13 +2,14 @@ package config
 
 import (
 	"fmt"
-	"github.com/spf13/viper" //配置管理
+	"github.com/spf13/viper" // 配置管理
 )
 
 var Conf = new(TotalConfig)
 
 type TotalConfig struct {
 	*MySQLConfig `mapstructure:"mysql"`
+	BaseURL      string `mapstructure:"base_url"`
 }
 
 type MySQLConfig struct {

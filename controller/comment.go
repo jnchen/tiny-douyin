@@ -53,7 +53,7 @@ func CommentAction(c *gin.Context) {
 				Content:    commentDAO.Content,
 				CreateDate: commentDAO.CreatedAt.Format("01-02"),
 			}})
-		//测试数据
+		// 测试数据
 		/*
 			c.JSON(http.StatusOK, CommentActionResponse{Response: model.Response{StatusCode: 0},
 				Comment: model.Comment{
@@ -114,9 +114,9 @@ func CommentList(c *gin.Context) {
 			User: model.User{
 				Id:            commentDAO.User.ID,
 				Name:          commentDAO.User.Name,
-				FollowCount:   0,     //TODO
-				FollowerCount: 0,     //TODO
-				IsFollow:      false, //TODO
+				FollowCount:   0,     // TODO
+				FollowerCount: 0,     // TODO
+				IsFollow:      false, // TODO
 			},
 			Content:    commentDAO.Content,
 			CreateDate: commentDAO.CreatedAt.Format("01-02"),
@@ -128,7 +128,7 @@ func CommentList(c *gin.Context) {
 		CommentList: commentList,
 	})
 
-	//测试数据
+	// 测试数据
 	/*
 		c.JSON(http.StatusOK, CommentListResponse{
 			Response:    model.Response{StatusCode: 0},

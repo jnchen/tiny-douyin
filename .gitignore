@@ -22,5 +22,6 @@ go.work
 
 .idea
 
+public/videos/
 bin/
 .1024feature-file

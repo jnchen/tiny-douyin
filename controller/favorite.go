@@ -7,6 +7,11 @@ import (
 	"net/http"
 )
 
+type VideoListResponse struct {
+	model.Response
+	VideoList []model.Video `json:"video_list"`
+}
+
 // FavoriteAction no practical effect, just check if token is valid
 func FavoriteAction(c *gin.Context) {
 	token := c.Query("token")
