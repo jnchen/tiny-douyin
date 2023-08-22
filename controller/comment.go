@@ -46,27 +46,14 @@ func CommentAction(c *gin.Context) {
 			return
 		}
 
-		c.JSON(http.StatusOK, CommentActionResponse{Response: model.Response{StatusCode: 0},
-			Comment: model.Comment{
-				Id:         commentDAO.ID,
-				User:       *user,
-				Content:    commentDAO.Content,
-				CreateDate: commentDAO.CreatedAt.Format("01-02"),
-			}})
-		// 测试数据
-		/*
-			c.JSON(http.StatusOK, CommentActionResponse{Response: model.Response{StatusCode: 0},
-				Comment: model.Comment{
-					Id:         1,
-					User:       *user,
-					Content:    text,
-					CreateDate: "05-01",
-				}})
-		*/
+		c.JSON(http.StatusOK, CommentActionResponse{
+			Response: model.Response{StatusCode: 0},
+			Comment:  *commentDAO.ToModel(),
+		})
 		return
 	}
 	if request.ActionType == 2 { // Delete Comment
-		err := service.CommentDelete(request.CommentId)
+		err := service.CommentDelete(request.CommentId, request.VideoId)
 		if err != nil {
 			c.JSON(http.StatusOK, CommentActionResponse{
 				Response: model.Response{StatusCode: 1, StatusMsg: err.Error()},
@@ -107,32 +94,13 @@ func CommentList(c *gin.Context) {
 		return
 	}
 
-	var commentList []model.Comment = make([]model.Comment, len(commentListDAO))
+	var commentList = make([]model.Comment, len(commentListDAO))
 	for i, commentDAO := range commentListDAO {
-		commentList[i] = model.Comment{
-			Id: commentDAO.ID,
-			User: model.User{
-				Id:            commentDAO.User.ID,
-				Name:          commentDAO.User.Name,
-				FollowCount:   0,     // TODO
-				FollowerCount: 0,     // TODO
-				IsFollow:      false, // TODO
-			},
-			Content:    commentDAO.Content,
-			CreateDate: commentDAO.CreatedAt.Format("01-02"),
-		}
+		commentList[i] = *commentDAO.ToModel()
 	}
 
 	c.JSON(http.StatusOK, CommentListResponse{
 		Response:    model.Response{StatusCode: 0},
 		CommentList: commentList,
 	})
-
-	// 测试数据
-	/*
-		c.JSON(http.StatusOK, CommentListResponse{
-			Response:    model.Response{StatusCode: 0},
-			CommentList: DemoComments,
-		})
-	*/
 }

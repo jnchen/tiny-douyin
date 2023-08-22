@@ -48,8 +48,8 @@ func Publish(c *gin.Context) {
 	}
 
 	videoFileName := fmt.Sprintf("%s%s", uuid, filepath.Ext(data.Filename))
-	saveFilePath := filepath.Join(userDir, videoFileName)
-	if err := c.SaveUploadedFile(data, saveFilePath); err != nil {
+	videoFilePath := filepath.Join(userDir, videoFileName)
+	if err := c.SaveUploadedFile(data, videoFilePath); err != nil {
 		c.JSON(http.StatusOK, model.Response{
 			StatusCode: 1,
 			StatusMsg:  err.Error(),
@@ -61,12 +61,12 @@ func Publish(c *gin.Context) {
 		path.Join("/static/videos/", fmt.Sprintf("%d", user.Id), videoFileName),
 	)
 
+	coverFileName := fmt.Sprintf("%s%s", uuid, ".jpg")
+	coverFilePath := filepath.Join(userDir, coverFileName)
 	coverUrl := "https://cdn.pixabay.com/photo/2016/03/27/18/10/bear-1283347_1280.jpg"
-	if img, err := util.ReadVideoSingleFrame(saveFilePath, 0); nil != err {
+	if img, err := util.ReadVideoSingleFrame(videoFilePath, 0); nil != err {
 		log.Println("获取视频封面失败：", err)
 	} else {
-		coverFileName := fmt.Sprintf("%s%s", uuid, ".jpg")
-		coverFilePath := filepath.Join(userDir, coverFileName)
 		if err := imaging.Save(img, coverFilePath); nil != err {
 			log.Println("保存视频封面失败：", err)
 		} else {
@@ -85,6 +85,14 @@ func Publish(c *gin.Context) {
 		req.Title,
 	)
 	if nil != err {
+		// 删除视频文件
+		if err := os.Remove(videoFilePath); nil != err {
+			log.Printf("删除视频文件%s失败：%s\n", videoFilePath, err)
+		}
+		// 删除封面文件
+		if err := os.Remove(coverFilePath); nil != err {
+			log.Printf("删除封面文件%s失败：%s\n", coverFilePath, err)
+		}
 		c.JSON(http.StatusOK, model.Response{
 			StatusCode: 1,
 			StatusMsg:  err.Error(),
@@ -129,19 +137,7 @@ func PublishList(c *gin.Context) {
 
 	videoPublishList := make([]model.Video, len(videoPublishListDAO))
 	for i, video := range videoPublishListDAO {
-		videoPublishList[i] = model.Video{
-			Id: video.ID,
-			Author: model.User{
-				Id:   video.Author.ID,
-				Name: video.Author.Name,
-			},
-			PlayUrl:       video.PlayUrl,
-			CoverUrl:      video.CoverUrl,
-			FavoriteCount: 0,     // TODO
-			CommentCount:  0,     // TODO
-			IsFavorite:    false, // TODO: 是否已收藏
-			Title:         video.Title,
-		}
+		videoPublishList[i] = *video.ToModel()
 	}
 
 	c.JSON(http.StatusOK, model.PublishListResponse{

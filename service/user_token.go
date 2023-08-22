@@ -56,13 +56,7 @@ func CheckLogin(token string) (*model.User, bool) {
 		return nil, false
 	}
 
-	return &model.User{
-		Id:            userInfo.ID,
-		Name:          userInfo.Name,
-		FollowCount:   0,
-		FollowerCount: 0,
-		IsFollow:      false,
-	}, true
+	return userInfo.ToModel(), true
 }
 
 func UserLogin(username string, password string) (int64, error) {

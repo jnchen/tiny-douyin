@@ -3,6 +3,7 @@ package service
 import (
 	"douyin/db"
 	"errors"
+	"time"
 )
 
 func VideoPublish(
@@ -16,7 +17,8 @@ func VideoPublish(
 		CoverUrl: coverUrl,
 		Title:    title,
 	}
-	result := db.DB.Create(&video)
+	// 创建后加载对象，方便直接调用ToModel方法
+	result := db.DB.Preload("Author").Create(&video).First(&video)
 	if nil != result.Error {
 		return nil, result.Error
 	}
@@ -36,4 +38,17 @@ func VideoPublishList(userId int64) ([]db.Video, error) {
 		return nil, errors.New("获取视频发布列表失败！")
 	}
 	return videoPublishList, nil
+}
+
+func VideoList(latestTime time.Time, limit int) ([]db.Video, error) {
+	var videoList []db.Video
+	result := db.DB.Preload("Author").
+		Where("created_at < ?", latestTime).
+		Order("created_at DESC").
+		Limit(limit).
+		Find(&videoList)
+	if nil != result.Error {
+		return nil, result.Error
+	}
+	return videoList, nil
 }

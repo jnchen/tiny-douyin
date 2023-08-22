@@ -3,7 +3,6 @@ package controller
 import (
 	"douyin/model"
 	"douyin/service"
-	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -97,7 +96,6 @@ func UserInfo(c *gin.Context) {
 	token := c.Query("token")
 
 	user, exist := service.CheckLogin(token)
-	fmt.Println(user)
 	if exist {
 		c.JSON(http.StatusOK, model.UserResponse{
 			Response: model.Response{StatusCode: 0},

@@ -11,7 +11,7 @@ pkgs.mkShell {
     packages = [
         # env
         pkgs.go
-	    pkgs.mysql80
+        pkgs.mysql80
         pkgs.redis
         pkgs.postgresql
         pkgs.ffmpeg
