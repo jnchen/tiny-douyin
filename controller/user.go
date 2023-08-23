@@ -72,16 +72,16 @@ func Login(c *gin.Context) {
 
 	userId, err := service.UserLogin(req.UserName, req.Password)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, model.UserLoginResponse{
-			Response: model.Response{StatusCode: 1, StatusMsg: "Login Error"},
+		c.JSON(http.StatusOK, model.UserLoginResponse{
+			Response: model.Response{StatusCode: 1, StatusMsg: err.Error()},
 		})
 		return
 	}
 
 	token, err := service.UserTokenCreate(userId)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, model.UserLoginResponse{
-			Response: model.Response{StatusCode: 1, StatusMsg: "Login Error"},
+		c.JSON(http.StatusOK, model.UserLoginResponse{
+			Response: model.Response{StatusCode: 1, StatusMsg: err.Error()},
 		})
 		return
 	}

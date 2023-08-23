@@ -23,7 +23,7 @@ func CommentAction(c *gin.Context) {
 		commentDAO, err := service.CommentPost(user.Id, request.VideoId, request.Content)
 		if err != nil {
 			c.JSON(
-				http.StatusInternalServerError,
+				http.StatusOK,
 				model.Response{StatusCode: 1, StatusMsg: err.Error()},
 			)
 			return
@@ -38,7 +38,7 @@ func CommentAction(c *gin.Context) {
 	if request.ActionType == 2 { // Delete Comment
 		err := service.CommentDelete(request.CommentId, request.VideoId)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, model.CommentActionResponse{
+			c.JSON(http.StatusOK, model.CommentActionResponse{
 				Response: model.Response{
 					StatusCode: 1,
 					StatusMsg:  err.Error(),
@@ -65,7 +65,7 @@ func CommentList(c *gin.Context) {
 
 	commentListDAO, err := service.CommentList(req.VideoId)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, model.CommentListResponse{
+		c.JSON(http.StatusOK, model.CommentListResponse{
 			Response: model.Response{StatusCode: 1, StatusMsg: err.Error()},
 		})
 		return

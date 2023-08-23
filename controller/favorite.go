@@ -21,7 +21,7 @@ func FavoriteAction(c *gin.Context) {
 	user := util.GetUser(c)
 	if req.ActionType == 1 {
 		if err := service.FavoriteAction(user.Id, req.VideoId); err != nil {
-			c.JSON(http.StatusInternalServerError, model.Response{
+			c.JSON(http.StatusOK, model.Response{
 				StatusCode: 1,
 				StatusMsg:  err.Error(),
 			})
@@ -29,7 +29,7 @@ func FavoriteAction(c *gin.Context) {
 		}
 	} else if req.ActionType == 2 {
 		if err := service.FavoriteDelete(user.Id, req.VideoId); err != nil {
-			c.JSON(http.StatusInternalServerError, model.Response{
+			c.JSON(http.StatusOK, model.Response{
 				StatusCode: 1,
 				StatusMsg:  err.Error(),
 			})
@@ -55,7 +55,7 @@ func FavoriteList(c *gin.Context) {
 
 	videoDAOList, err := service.FavoriteList(req.UserId)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, model.Response{
+		c.JSON(http.StatusOK, model.Response{
 			StatusCode: 1,
 			StatusMsg:  err.Error(),
 		})

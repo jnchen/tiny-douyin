@@ -28,7 +28,7 @@ func Feed(c *gin.Context) {
 
 	videoListDAO, err := service.VideoList(latestTime, limit)
 	if nil != err {
-		c.JSON(http.StatusInternalServerError, model.Response{
+		c.JSON(http.StatusOK, model.Response{
 			StatusCode: 1,
 			StatusMsg:  err.Error(),
 		})

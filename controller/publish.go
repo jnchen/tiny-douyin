@@ -31,7 +31,7 @@ func Publish(c *gin.Context) {
 	uuid := util.UUID()
 	userDir := filepath.Join("./public/videos", fmt.Sprintf("%d", user.Id))
 	if err := os.MkdirAll(userDir, os.ModePerm); nil != err {
-		c.JSON(http.StatusInternalServerError, model.Response{
+		c.JSON(http.StatusOK, model.Response{
 			StatusCode: 1,
 			StatusMsg:  err.Error(),
 		})
@@ -41,7 +41,7 @@ func Publish(c *gin.Context) {
 	videoFileName := fmt.Sprintf("%s%s", uuid, filepath.Ext(data.Filename))
 	videoFilePath := filepath.Join(userDir, videoFileName)
 	if err := c.SaveUploadedFile(data, videoFilePath); err != nil {
-		c.JSON(http.StatusInternalServerError, model.Response{
+		c.JSON(http.StatusOK, model.Response{
 			StatusCode: 1,
 			StatusMsg:  err.Error(),
 		})
@@ -83,7 +83,7 @@ func Publish(c *gin.Context) {
 		if err := os.Remove(coverFilePath); nil != err {
 			log.Printf("删除封面文件%s失败：%s\n", coverFilePath, err)
 		}
-		c.JSON(http.StatusInternalServerError, model.Response{
+		c.JSON(http.StatusOK, model.Response{
 			StatusCode: 1,
 			StatusMsg:  err.Error(),
 		})

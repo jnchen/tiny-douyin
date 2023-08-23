@@ -18,11 +18,13 @@ func UserTokenCreate(id int64) (string, error) {
 	}
 	expireAt := time.Now().Add(timeDuration)
 
-	db.DB.Create(&db.UserToken{
+	if result := db.DB.Create(&db.UserToken{
 		UserId:   id,
 		Token:    token,
 		ExpireAt: expireAt,
-	})
+	}); result.Error != nil {
+		return "", result.Error
+	}
 
 	return token, nil
 }
@@ -67,10 +69,10 @@ func UserLogin(username string, password string) (int64, error) {
 	var user db.User
 	result := db.DB.Where("username = ? and password = ?", username, passwordMd5).First(&user)
 	if nil != result.Error {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return 0, errors.New("用户名或密码错误")
+		}
 		return 0, result.Error
-	}
-	if result.RowsAffected == 0 {
-		return 0, errors.New("用户名或密码错误")
 	}
 
 	return user.ID, nil
