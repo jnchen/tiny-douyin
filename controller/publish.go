@@ -13,7 +13,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"strconv"
 )
 
 // Publish check token then save upload file to public directory
@@ -27,16 +26,8 @@ func Publish(c *gin.Context) {
 		return
 	}
 
-	user, err := service.CheckLogin(req.Token)
-	if nil != err {
-		c.JSON(http.StatusOK, model.Response{
-			StatusCode: 1,
-			StatusMsg:  err.Error(),
-		})
-		return
-	}
-
 	data := req.Data
+	user := util.GetUser(c)
 	uuid := util.UUID()
 	userDir := filepath.Join("./public/videos", fmt.Sprintf("%d", user.Id))
 	if err := os.MkdirAll(userDir, os.ModePerm); nil != err {
@@ -107,17 +98,8 @@ func Publish(c *gin.Context) {
 
 // PublishList all users have same publish video list
 func PublishList(c *gin.Context) {
-	token := c.Query("token")
-	userId, err := strconv.ParseInt(c.Query("user_id"), 10, 64)
-	if nil != err {
-		c.JSON(http.StatusOK, model.Response{
-			StatusCode: 1,
-			StatusMsg:  err.Error(),
-		})
-		return
-	}
-	user, err := service.CheckLogin(token)
-	if nil != err {
+	var req model.PublishListRequest
+	if err := c.ShouldBind(&req); nil != err {
 		c.JSON(http.StatusOK, model.Response{
 			StatusCode: 1,
 			StatusMsg:  err.Error(),
@@ -125,7 +107,7 @@ func PublishList(c *gin.Context) {
 		return
 	}
 
-	videoPublishListDAO, err := service.VideoPublishList(userId)
+	videoPublishListDAO, err := service.VideoPublishList(req.UserId)
 	if nil != err {
 		c.JSON(http.StatusOK, model.Response{
 			StatusCode: 1,
@@ -137,7 +119,12 @@ func PublishList(c *gin.Context) {
 	videoPublishList := make([]model.Video, len(videoPublishListDAO))
 	for i, video := range videoPublishListDAO {
 		videoPublishList[i] = *video.ToModel()
-		videoPublishList[i].IsFavorite, err = service.FavoriteCheck(user.Id, video.ID)
+	}
+
+	if user := util.GetUser(c); nil != user {
+		for i, video := range videoPublishList {
+			videoPublishList[i].IsFavorite, _ = service.FavoriteCheck(user.Id, video.Id)
+		}
 	}
 
 	c.JSON(http.StatusOK, model.PublishListResponse{

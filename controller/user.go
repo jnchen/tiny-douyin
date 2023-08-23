@@ -3,6 +3,7 @@ package controller
 import (
 	"douyin/model"
 	"douyin/service"
+	"douyin/util"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -93,17 +94,8 @@ func Login(c *gin.Context) {
 }
 
 func UserInfo(c *gin.Context) {
-	token := c.Query("token")
-
-	user, err := service.CheckLogin(token)
-	if nil == err {
-		c.JSON(http.StatusOK, model.UserResponse{
-			Response: model.Response{StatusCode: 0},
-			User:     *user,
-		})
-	} else {
-		c.JSON(http.StatusOK, model.UserResponse{
-			Response: model.Response{StatusCode: 1, StatusMsg: err.Error()},
-		})
-	}
+	c.JSON(http.StatusOK, model.UserResponse{
+		Response: model.Response{StatusCode: 0},
+		User:     *util.GetUser(c),
+	})
 }

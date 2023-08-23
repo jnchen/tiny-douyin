@@ -3,6 +3,7 @@ package controller
 import (
 	"douyin/model"
 	"douyin/service"
+	"douyin/util"
 	"github.com/gin-gonic/gin"
 	"net/http"
 )
@@ -17,15 +18,7 @@ func FavoriteAction(c *gin.Context) {
 		return
 	}
 
-	user, err := service.CheckLogin(req.Token)
-	if nil != err {
-		c.JSON(http.StatusOK, model.Response{
-			StatusCode: 1,
-			StatusMsg:  err.Error(),
-		})
-		return
-	}
-
+	user := util.GetUser(c)
 	if req.ActionType == 1 {
 		if err := service.FavoriteAction(user.Id, req.VideoId); err != nil {
 			c.JSON(http.StatusInternalServerError, model.Response{
@@ -60,14 +53,6 @@ func FavoriteList(c *gin.Context) {
 		return
 	}
 
-	if _, err := service.CheckLogin(req.Token); nil != err {
-		c.JSON(http.StatusOK, model.Response{
-			StatusCode: 1,
-			StatusMsg:  err.Error(),
-		})
-		return
-	}
-
 	videoDAOList, err := service.FavoriteList(req.UserId)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, model.Response{
@@ -80,7 +65,6 @@ func FavoriteList(c *gin.Context) {
 	videoList := make([]model.Video, len(videoDAOList))
 	for i, videoDAO := range videoDAOList {
 		videoList[i] = *videoDAO.ToModel()
-		videoList[i].IsFavorite = true
 	}
 
 	c.JSON(http.StatusOK, model.FavoriteListResponse{
