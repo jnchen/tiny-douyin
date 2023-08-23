@@ -10,18 +10,18 @@ import (
 func FavoriteAction(c *gin.Context) {
 	var req model.FavoriteActionRequest
 	if err := c.ShouldBind(&req); err != nil {
-		c.JSON(http.StatusBadRequest, model.Response{
+		c.JSON(http.StatusOK, model.Response{
 			StatusCode: 1,
 			StatusMsg:  err.Error(),
 		})
 		return
 	}
 
-	user, exist := service.CheckLogin(req.Token)
-	if !exist {
-		c.JSON(http.StatusBadRequest, model.Response{
+	user, err := service.CheckLogin(req.Token)
+	if nil != err {
+		c.JSON(http.StatusOK, model.Response{
 			StatusCode: 1,
-			StatusMsg:  "User doesn't exist",
+			StatusMsg:  err.Error(),
 		})
 		return
 	}
@@ -60,18 +60,17 @@ func FavoriteList(c *gin.Context) {
 		return
 	}
 
-	_, exist := service.CheckLogin(req.Token)
-	if !exist {
+	if _, err := service.CheckLogin(req.Token); nil != err {
 		c.JSON(http.StatusOK, model.Response{
 			StatusCode: 1,
-			StatusMsg:  "User doesn't exist",
+			StatusMsg:  err.Error(),
 		})
 		return
 	}
 
 	videoDAOList, err := service.FavoriteList(req.UserId)
 	if err != nil {
-		c.JSON(http.StatusOK, model.Response{
+		c.JSON(http.StatusInternalServerError, model.Response{
 			StatusCode: 1,
 			StatusMsg:  err.Error(),
 		})

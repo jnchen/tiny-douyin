@@ -71,7 +71,7 @@ func Login(c *gin.Context) {
 
 	userId, err := service.UserLogin(req.UserName, req.Password)
 	if err != nil {
-		c.JSON(http.StatusOK, model.UserLoginResponse{
+		c.JSON(http.StatusInternalServerError, model.UserLoginResponse{
 			Response: model.Response{StatusCode: 1, StatusMsg: "Login Error"},
 		})
 		return
@@ -79,7 +79,7 @@ func Login(c *gin.Context) {
 
 	token, err := service.UserTokenCreate(userId)
 	if err != nil {
-		c.JSON(http.StatusOK, model.UserLoginResponse{
+		c.JSON(http.StatusInternalServerError, model.UserLoginResponse{
 			Response: model.Response{StatusCode: 1, StatusMsg: "Login Error"},
 		})
 		return
@@ -95,15 +95,15 @@ func Login(c *gin.Context) {
 func UserInfo(c *gin.Context) {
 	token := c.Query("token")
 
-	user, exist := service.CheckLogin(token)
-	if exist {
+	user, err := service.CheckLogin(token)
+	if nil == err {
 		c.JSON(http.StatusOK, model.UserResponse{
 			Response: model.Response{StatusCode: 0},
 			User:     *user,
 		})
 	} else {
 		c.JSON(http.StatusOK, model.UserResponse{
-			Response: model.Response{StatusCode: 1, StatusMsg: "User doesn't exist"},
+			Response: model.Response{StatusCode: 1, StatusMsg: err.Error()},
 		})
 	}
 }

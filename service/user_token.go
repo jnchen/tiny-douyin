@@ -27,14 +27,14 @@ func UserTokenCreate(id int64) (string, error) {
 	return token, nil
 }
 
-func CheckLogin(token string) (*model.User, bool) {
+func CheckLogin(token string) (*model.User, error) {
 	var userToken db.UserToken
 	result := db.DB.Where("token = ?", token).Limit(1).Find(&userToken)
 	if result.Error != nil {
-		return nil, false
+		return nil, result.Error
 	}
 	if result.RowsAffected == 0 {
-		return nil, false
+		return nil, errors.New("token不存在")
 	}
 
 	if time.Now().After(userToken.ExpireAt) {
@@ -44,19 +44,19 @@ func CheckLogin(token string) (*model.User, bool) {
 			},
 		}
 		db.DB.Delete(&delCond)
-		return nil, false
+		return nil, errors.New("token已过期")
 	}
 
 	var userInfo db.User
 	result = db.DB.Where("id = ?", userToken.UserId).First(&userInfo)
 	if result.Error != nil {
-		return nil, false
+		return nil, result.Error
 	}
 	if result.RowsAffected == 0 {
-		return nil, false
+		return nil, errors.New("用户不存在")
 	}
 
-	return userInfo.ToModel(), true
+	return userInfo.ToModel(), nil
 }
 
 func UserLogin(username string, password string) (int64, error) {

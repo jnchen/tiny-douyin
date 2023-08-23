@@ -13,7 +13,7 @@ import (
 func Feed(c *gin.Context) {
 	var req model.FeedRequest
 	if err := c.ShouldBindQuery(&req); nil != err {
-		c.JSON(http.StatusBadRequest, model.Response{
+		c.JSON(http.StatusOK, model.Response{
 			StatusCode: 1,
 			StatusMsg:  err.Error(),
 		})
@@ -25,8 +25,6 @@ func Feed(c *gin.Context) {
 	if 0 == req.LatestTime {
 		latestTime = time.Now()
 	}
-
-	user, isUserExist := service.CheckLogin(req.Token)
 
 	videoListDAO, err := service.VideoList(latestTime, limit)
 	if nil != err {
@@ -49,7 +47,7 @@ func Feed(c *gin.Context) {
 		nextTime = integer.Int64Min(nextTime, video.CreatedAt.Unix())
 		videoList[i] = *video.ToModel()
 	}
-	if isUserExist {
+	if user, loginErr := service.CheckLogin(req.Token); nil == loginErr {
 		for i, video := range videoList {
 			videoList[i].IsFavorite, err = service.FavoriteCheck(user.Id, video.Id)
 		}

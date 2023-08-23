@@ -26,7 +26,7 @@ func MessageAction(c *gin.Context) {
 	toUserId := c.Query("to_user_id")
 	content := c.Query("content")
 
-	if user, exist := service.CheckLogin(token); exist {
+	if user, err := service.CheckLogin(token); nil == err {
 		userIdB, _ := strconv.Atoi(toUserId)
 		chatKey := genChatKey(user.Id, int64(userIdB))
 
@@ -44,7 +44,10 @@ func MessageAction(c *gin.Context) {
 		}
 		c.JSON(http.StatusOK, model.Response{StatusCode: 0})
 	} else {
-		c.JSON(http.StatusOK, model.Response{StatusCode: 1, StatusMsg: "User doesn't exist"})
+		c.JSON(http.StatusOK, model.Response{
+			StatusCode: 1,
+			StatusMsg:  err.Error(),
+		})
 	}
 }
 
@@ -53,13 +56,16 @@ func MessageChat(c *gin.Context) {
 	token := c.Query("token")
 	toUserId := c.Query("to_user_id")
 
-	if user, exist := service.CheckLogin(token); exist {
+	if user, err := service.CheckLogin(token); nil == err {
 		userIdB, _ := strconv.Atoi(toUserId)
 		chatKey := genChatKey(user.Id, int64(userIdB))
 
-		c.JSON(http.StatusOK, ChatResponse{Response: model.Response{StatusCode: 0}, MessageList: tempChat[chatKey]})
+		c.JSON(http.StatusOK, ChatResponse{
+			Response:    model.Response{StatusCode: 0},
+			MessageList: tempChat[chatKey],
+		})
 	} else {
-		c.JSON(http.StatusOK, model.Response{StatusCode: 1, StatusMsg: "User doesn't exist"})
+		c.JSON(http.StatusOK, model.Response{StatusCode: 1, StatusMsg: err.Error()})
 	}
 }
 

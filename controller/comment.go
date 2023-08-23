@@ -31,10 +31,10 @@ func CommentAction(c *gin.Context) {
 		return
 	}
 
-	user, exist := service.CheckLogin(request.Token)
-	if !exist {
+	user, err := service.CheckLogin(request.Token)
+	if nil != err {
 		c.JSON(http.StatusOK, model.CommentActionResponse{
-			Response: model.Response{StatusCode: 1, StatusMsg: "User doesn't exist"},
+			Response: model.Response{StatusCode: 1, StatusMsg: err.Error()},
 		})
 		return
 	}
@@ -42,7 +42,10 @@ func CommentAction(c *gin.Context) {
 	if request.ActionType == 1 { // Post Comment
 		commentDAO, err := service.CommentPost(user.Id, request.VideoId, request.Content)
 		if err != nil {
-			c.JSON(http.StatusOK, model.Response{StatusCode: 1, StatusMsg: err.Error()})
+			c.JSON(
+				http.StatusInternalServerError,
+				model.Response{StatusCode: 1, StatusMsg: err.Error()},
+			)
 			return
 		}
 
@@ -55,8 +58,11 @@ func CommentAction(c *gin.Context) {
 	if request.ActionType == 2 { // Delete Comment
 		err := service.CommentDelete(request.CommentId, request.VideoId)
 		if err != nil {
-			c.JSON(http.StatusOK, CommentActionResponse{
-				Response: model.Response{StatusCode: 1, StatusMsg: err.Error()},
+			c.JSON(http.StatusInternalServerError, CommentActionResponse{
+				Response: model.Response{
+					StatusCode: 1,
+					StatusMsg:  err.Error(),
+				},
 			})
 			return
 		}
@@ -78,17 +84,16 @@ func CommentList(c *gin.Context) {
 		return
 	}
 
-	_, exist := service.CheckLogin(token)
-	if !exist {
+	if _, err := service.CheckLogin(token); nil != err {
 		c.JSON(http.StatusOK, CommentListResponse{
-			Response: model.Response{StatusCode: 1, StatusMsg: "User doesn't exist"},
+			Response: model.Response{StatusCode: 1, StatusMsg: err.Error()},
 		})
 		return
 	}
 
 	commentListDAO, err := service.CommentList(videoId)
 	if err != nil {
-		c.JSON(http.StatusOK, CommentListResponse{
+		c.JSON(http.StatusInternalServerError, CommentListResponse{
 			Response: model.Response{StatusCode: 1, StatusMsg: err.Error()},
 		})
 		return

@@ -20,18 +20,18 @@ import (
 func Publish(c *gin.Context) {
 	var req model.PublishActionRequest
 	if err := c.ShouldBind(&req); nil != err {
-		c.JSON(http.StatusBadRequest, model.Response{
+		c.JSON(http.StatusOK, model.Response{
 			StatusCode: 1,
 			StatusMsg:  err.Error(),
 		})
 		return
 	}
 
-	user, exist := service.CheckLogin(req.Token)
-	if !exist {
+	user, err := service.CheckLogin(req.Token)
+	if nil != err {
 		c.JSON(http.StatusOK, model.Response{
 			StatusCode: 1,
-			StatusMsg:  "用户不存在！",
+			StatusMsg:  err.Error(),
 		})
 		return
 	}
@@ -40,7 +40,7 @@ func Publish(c *gin.Context) {
 	uuid := util.UUID()
 	userDir := filepath.Join("./public/videos", fmt.Sprintf("%d", user.Id))
 	if err := os.MkdirAll(userDir, os.ModePerm); nil != err {
-		c.JSON(http.StatusOK, model.Response{
+		c.JSON(http.StatusInternalServerError, model.Response{
 			StatusCode: 1,
 			StatusMsg:  err.Error(),
 		})
@@ -50,7 +50,7 @@ func Publish(c *gin.Context) {
 	videoFileName := fmt.Sprintf("%s%s", uuid, filepath.Ext(data.Filename))
 	videoFilePath := filepath.Join(userDir, videoFileName)
 	if err := c.SaveUploadedFile(data, videoFilePath); err != nil {
-		c.JSON(http.StatusOK, model.Response{
+		c.JSON(http.StatusInternalServerError, model.Response{
 			StatusCode: 1,
 			StatusMsg:  err.Error(),
 		})
@@ -78,13 +78,12 @@ func Publish(c *gin.Context) {
 	}
 
 	// 插入视频信息
-	_, err := service.VideoPublish(
+	if _, err := service.VideoPublish(
 		user.Id,
 		playUrl,
 		coverUrl,
 		req.Title,
-	)
-	if nil != err {
+	); nil != err {
 		// 删除视频文件
 		if err := os.Remove(videoFilePath); nil != err {
 			log.Printf("删除视频文件%s失败：%s\n", videoFilePath, err)
@@ -93,7 +92,7 @@ func Publish(c *gin.Context) {
 		if err := os.Remove(coverFilePath); nil != err {
 			log.Printf("删除封面文件%s失败：%s\n", coverFilePath, err)
 		}
-		c.JSON(http.StatusOK, model.Response{
+		c.JSON(http.StatusInternalServerError, model.Response{
 			StatusCode: 1,
 			StatusMsg:  err.Error(),
 		})
@@ -117,11 +116,11 @@ func PublishList(c *gin.Context) {
 		})
 		return
 	}
-	user, exists := service.CheckLogin(token)
-	if !exists {
+	user, err := service.CheckLogin(token)
+	if nil != err {
 		c.JSON(http.StatusOK, model.Response{
 			StatusCode: 1,
-			StatusMsg:  "用户不存在！",
+			StatusMsg:  err.Error(),
 		})
 		return
 	}
