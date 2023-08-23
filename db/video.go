@@ -27,9 +27,9 @@ func (video *Video) ToModel() *model.Video {
 		Author:        *video.Author.ToModel(),
 		PlayUrl:       video.PlayUrl,
 		CoverUrl:      video.CoverUrl,
-		FavoriteCount: 0, // TODO
+		FavoriteCount: video.FavoriteCount,
 		CommentCount:  video.CommentCount,
-		IsFavorite:    false, // TODO: 是否已收藏
+		IsFavorite:    false, // 默认为false，可以在业务逻辑中设置
 		Title:         video.Title,
 	}
 }
@@ -37,35 +37,23 @@ func (video *Video) ToModel() *model.Video {
 // AfterCreate 插入新的视频信息后，需要更新作者的作品数
 func (video *Video) AfterCreate(tx *gorm.DB) (err error) {
 	// 更新作者的作品数
-	result := tx.Model(&User{}).
+	err = tx.Model(&User{}).
 		Where("id = ?", video.AuthorId).
 		Update(
 			"work_count",
 			gorm.Expr("work_count + ?", 1),
-		)
-	if nil != result.Error {
-		return result.Error
-	}
-	if result.RowsAffected == 0 {
-		return gorm.ErrRecordNotFound
-	}
+		).Error
 	return
 }
 
 // AfterDelete 删除视频信息后，需要更新作者的作品数
 func (video *Video) AfterDelete(tx *gorm.DB) (err error) {
 	// 更新作者的作品数
-	result := tx.Model(&User{}).
+	err = tx.Model(&User{}).
 		Where("id = ?", video.AuthorId).
 		Update(
 			"work_count",
 			gorm.Expr("work_count - ?", 1),
-		)
-	if nil != result.Error {
-		return result.Error
-	}
-	if result.RowsAffected == 0 {
-		return gorm.ErrRecordNotFound
-	}
+		).Error
 	return
 }

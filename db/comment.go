@@ -33,35 +33,23 @@ func (comment *Comment) ToModel() *model.Comment {
 // AfterCreate 插入新的评论信息后，需要更新视频的评论数
 func (comment *Comment) AfterCreate(tx *gorm.DB) (err error) {
 	// 更新视频的评论数
-	result := tx.Model(&Video{}).
+	err = tx.Model(&Video{}).
 		Where("id = ?", comment.VideoID).
 		Update(
 			"comment_count",
 			gorm.Expr("comment_count + ?", 1),
-		)
-	if nil != result.Error {
-		return result.Error
-	}
-	if result.RowsAffected == 0 {
-		return gorm.ErrRecordNotFound
-	}
+		).Error
 	return
 }
 
 // BeforeDelete 删除评论信息前，需要更新视频的评论数
 func (comment *Comment) BeforeDelete(tx *gorm.DB) (err error) {
 	// 更新视频的评论数
-	result := tx.Model(&Video{}).
+	err = tx.Model(&Video{}).
 		Where("id = ?", comment.VideoID).
 		Update(
 			"comment_count",
 			gorm.Expr("comment_count - ?", 1),
-		)
-	if nil != result.Error {
-		return result.Error
-	}
-	if result.RowsAffected == 0 {
-		return gorm.ErrRecordNotFound
-	}
+		).Error
 	return
 }

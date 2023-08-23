@@ -14,7 +14,7 @@ type User struct {
 	Avatar          string    `gorm:"type:varchar(500);comment:头像地址"`
 	BackgroundImage string    `gorm:"type:varchar(500);comment:背景地址"`
 	Signature       string    `gorm:"type:varchar(1000);comment:个性签名"`
-	TotalFovarited  int64     `gorm:"type:bigint;comment:获赞总数"`
+	TotalFavorited  int64     `gorm:"type:bigint;comment:获赞总数"`
 	WorkCount       int64     `gorm:"type:bigint;comment:作品数"`
 	FavoriteCount   int64     `gorm:"type:bigint;comment:喜欢数"`
 	CreatedAt       time.Time `gorm:"comment:创建时间"`
@@ -28,8 +28,8 @@ func (user *User) ToModel() *model.User {
 		FollowCount:    0, // TODO
 		FollowerCount:  0, // TODO
 		IsFollow:       false,
-		TotalFavorited: 0, // TODO
+		TotalFavorited: user.TotalFavorited,
 		WorkCount:      user.WorkCount,
-		FavoriteCount:  0, // TODO
+		FavoriteCount:  user.FavoriteCount,
 	}
 }

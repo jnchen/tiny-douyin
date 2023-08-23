@@ -29,7 +29,7 @@ func UserTokenCreate(id int64) (string, error) {
 
 func CheckLogin(token string) (*model.User, bool) {
 	var userToken db.UserToken
-	result := db.DB.Where("token = ?", token).First(&userToken)
+	result := db.DB.Where("token = ?", token).Limit(1).Find(&userToken)
 	if result.Error != nil {
 		return nil, false
 	}

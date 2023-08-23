@@ -1,8 +1,8 @@
-base_url: "https://aa56e43111862a701ce7fbe1f67cc7a1-app.1024paas.com:8080"
+base_url: "http://192.168.1.100:8080"
 mysql:
-  host: 172.16.32.31
-  port: 51829
+  host: 127.0.0.1
+  port: 3306
   options: "charset=utf8mb4&parseTime=True&loc=Local"
   dbname: "douyin"
   username: "root"
-  password: "RHYJvaDS"
+  password: "HimeHina6923."

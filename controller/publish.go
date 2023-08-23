@@ -117,7 +117,7 @@ func PublishList(c *gin.Context) {
 		})
 		return
 	}
-	_, exists := service.CheckLogin(token)
+	user, exists := service.CheckLogin(token)
 	if !exists {
 		c.JSON(http.StatusOK, model.Response{
 			StatusCode: 1,
@@ -138,6 +138,7 @@ func PublishList(c *gin.Context) {
 	videoPublishList := make([]model.Video, len(videoPublishListDAO))
 	for i, video := range videoPublishListDAO {
 		videoPublishList[i] = *video.ToModel()
+		videoPublishList[i].IsFavorite, err = service.FavoriteCheck(user.Id, video.ID)
 	}
 
 	c.JSON(http.StatusOK, model.PublishListResponse{
