@@ -7,3 +7,8 @@ mysql:
   dbname: "douyin"
   username: "root"
   password: "********"
+oss:
+  endpoint: "oss-cn-hangzhou.aliyuncs.com"
+  bucket_name: "stickit-douyin"
+  access_key_id: "************************"
+  access_key_secret: "******************************"

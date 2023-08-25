@@ -3,12 +3,10 @@ package util
 import (
 	"bytes"
 	"fmt"
-	"github.com/disintegration/imaging"
 	ffmpeg "github.com/u2takey/ffmpeg-go"
-	"image"
 )
 
-func ReadVideoSingleFrame(videoPath string, frameNum int) (image.Image, error) {
+func ReadSingleFrameAsBytes(videoPath string, frameNum int) ([]byte, error) {
 	buf := bytes.NewBuffer(nil)
 	err := ffmpeg.Input(videoPath).
 		Filter("select", ffmpeg.Args{
@@ -24,9 +22,5 @@ func ReadVideoSingleFrame(videoPath string, frameNum int) (image.Image, error) {
 	if err != nil {
 		return nil, err
 	}
-	img, err := imaging.Decode(buf)
-	if err != nil {
-		return nil, err
-	}
-	return img, nil
+	return buf.Bytes(), nil
 }

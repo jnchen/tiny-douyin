@@ -13,6 +13,7 @@ var Conf = new(TotalConfig)
 type TotalConfig struct {
 	BaseURL      string `mapstructure:"base_url"`
 	*MySQLConfig `mapstructure:"mysql"`
+	*OSSConfig   `mapstructure:"oss"`
 }
 
 type MySQLConfig struct {
@@ -22,6 +23,13 @@ type MySQLConfig struct {
 	Dbname   string `mapstructure:"dbname"`
 	Options  string `mapstructure:"options"`
 	Port     int    `mapstructure:"port"`
+}
+
+type OSSConfig struct {
+	Endpoint        string `mapstructure:"endpoint"`
+	BucketName      string `mapstructure:"bucket_name"`
+	AccessKeyID     string `mapstructure:"access_key_id"`
+	AccessKeySecret string `mapstructure:"access_key_secret"`
 }
 
 func init() {
