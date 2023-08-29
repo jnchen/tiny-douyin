@@ -3,7 +3,6 @@
 # 例如，对于 mysql.host，值为 MYSQL_HOST，会从环境变量中获取 MYSQL_HOST 的值。
 # 若环境变量与键路径不同，可以使用 ${ENV:default}，最终会替换为环境变量中的值。
 # 如果环境变量为空，则使用 default 的值。
-base_url: ${paas_url:"http://192.168.1.100:8080"}
 mysql:
   host: MYSQL_HOST
   port: MYSQL_PORT
@@ -11,8 +10,13 @@ mysql:
   password: MYSQL_PASSWORD
   options: "charset=utf8mb4&parseTime=True&loc=Local"
   dbname: "douyin"
-oss:
-  endpoint: "oss-cn-hangzhou.aliyuncs.com"
-  bucket_name: "stickit-douyin"
-  access_key_id: "************************"
-  access_key_secret: "******************************"
+storage:
+  local:
+    path: "public"
+    base_url: ${paas_url:"http://192.168.1.100:8080"}
+  oss:
+    enable: false
+    endpoint: "oss-cn-hangzhou.aliyuncs.com"
+    bucket_name: "stickit-douyin"
+    access_key_id: "************************"
+    access_key_secret: "******************************"

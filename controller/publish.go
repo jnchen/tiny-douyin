@@ -4,11 +4,10 @@ import (
 	"bytes"
 	"douyin/model"
 	"douyin/service"
-	"douyin/storage/oss"
+	"douyin/storage"
 	"douyin/util"
 	"fmt"
 	"github.com/gin-gonic/gin"
-	"io"
 	"log"
 	"mime/multipart"
 	"net/http"
@@ -27,24 +26,6 @@ func Publish(c *gin.Context) {
 		return
 	}
 
-	file, err := req.Data.Open()
-	if nil != err {
-		log.Println("打开文件失败：", err)
-		return
-	}
-	defer func(file multipart.File) {
-		err := file.Close()
-		if err != nil {
-			log.Panicf("关闭文件失败：%s\n", err)
-		}
-	}(file)
-	buf := bytes.NewBuffer(nil)
-	if _, err := io.Copy(buf, file); nil != err {
-		log.Println("读取文件失败：", err)
-		return
-	}
-
-	data := buf.Bytes()
 	user := util.GetUser(c)
 	uuid := util.UUID()
 	userDir := fmt.Sprintf(
@@ -56,26 +37,40 @@ func Publish(c *gin.Context) {
 	videoFilePath := filepath.ToSlash(filepath.Join(userDir, videoFileName))
 	coverFileName := uuid + ".jpg"
 	coverFilePath := filepath.ToSlash(filepath.Join(userDir, coverFileName))
-	playUrl := oss.GetURL(videoFilePath)
-	coverUrl := oss.GetURL(coverFilePath)
+	playUrl := storage.Impl.GetURL(videoFilePath)
+	coverUrl := storage.Impl.GetURL(coverFilePath)
 
 	resultUploading := make(chan error)
 	go func() {
 		// TODO: 失败重传
-		if err := oss.Upload(videoFilePath, data); err != nil {
+		file, err := req.Data.Open()
+		if nil != err {
+			log.Println("打开视频文件失败：", err)
+			resultUploading <- err
+			return
+		}
+		defer func(file multipart.File) {
+			_ = file.Close()
+		}(file)
+
+		if err = storage.Impl.Upload(videoFilePath, file); err != nil {
 			log.Println("存储视频文件失败：", err)
 			resultUploading <- err
 			return
 		}
+
 		imgBytes, err := util.ReadSingleFrameAsBytes(playUrl, 1)
 		if nil != err {
 			log.Println("获取视频封面失败：", err)
 			resultUploading <- err
-		} else {
-			if err := oss.Upload(coverFilePath, imgBytes); nil != err {
-				log.Println("保存视频封面失败：", err)
-				resultUploading <- err
-			}
+			return
+		}
+		if err = storage.Impl.Upload(
+			coverFilePath,
+			bytes.NewReader(imgBytes),
+		); nil != err {
+			log.Println("保存视频封面失败：", err)
+			resultUploading <- err
 		}
 		resultUploading <- nil
 	}()
@@ -88,12 +83,16 @@ func Publish(c *gin.Context) {
 		req.Title,
 	); nil != err {
 		if err := <-resultUploading; nil == err {
-			if res, err := oss.Delete(videoFilePath, coverFilePath); nil != err {
+			deleted, err := storage.Impl.Delete(
+				videoFilePath,
+				coverFilePath,
+			)
+			if nil != err {
 				log.Println("删除文件失败：", err)
-				log.Println("失败项目：")
-				for _, obj := range res.DeletedObjects {
-					log.Println("\t", obj)
-				}
+			}
+
+			for _, path := range deleted {
+				log.Println("删除文件成功：", path)
 			}
 		}
 		c.JSON(http.StatusOK, model.Response{

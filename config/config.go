@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/spf13/viper" // 配置管理
 	"log"
+	"os"
 	"reflect"
 	"strings"
 )
@@ -11,9 +12,8 @@ import (
 var Conf = new(TotalConfig)
 
 type TotalConfig struct {
-	BaseURL      string `mapstructure:"base_url"`
-	*MySQLConfig `mapstructure:"mysql"`
-	*OSSConfig   `mapstructure:"oss"`
+	*MySQLConfig   `mapstructure:"mysql"`
+	*StorageConfig `mapstructure:"storage"`
 }
 
 type MySQLConfig struct {
@@ -25,11 +25,18 @@ type MySQLConfig struct {
 	Port     int    `mapstructure:"port"`
 }
 
-type OSSConfig struct {
-	Endpoint        string `mapstructure:"endpoint"`
-	BucketName      string `mapstructure:"bucket_name"`
-	AccessKeyID     string `mapstructure:"access_key_id"`
-	AccessKeySecret string `mapstructure:"access_key_secret"`
+type StorageConfig struct {
+	Local struct {
+		Path    string `mapstructure:"path"`
+		BaseURL string `mapstructure:"base_url"`
+	} `mapstructure:"local"`
+	OSS struct {
+		Enable          bool   `mapstructure:"enable"`
+		Endpoint        string `mapstructure:"endpoint"`
+		BucketName      string `mapstructure:"bucket_name"`
+		AccessKeyID     string `mapstructure:"access_key_id"`
+		AccessKeySecret string `mapstructure:"access_key_secret"`
+	} `mapstructure:"oss"`
 }
 
 func init() {
@@ -53,12 +60,17 @@ func init() {
 		}
 
 		envKey, defaultValue, defaultExists := parseEnvTemplate(value)
+		envVal, envSet := os.LookupEnv(envKey)
 
 		log.Printf("%d.\t%s 绑定环境变量 %s", i, k, envKey)
-		log.Println("\t读取环境变量", envKey)
-		if defaultExists {
-			log.Println("\t默认值\t", defaultValue)
-			viper.SetDefault(k, defaultValue)
+		log.Println("\t读取环境变量\t", envKey)
+		if !envSet || len(envVal) == 0 {
+			if defaultExists {
+				log.Println("\t默认值\t\t", defaultValue)
+				viper.Set(k, defaultValue)
+			} else {
+				log.Panicf("环境变量 %s 不存在或为空\n", envKey)
+			}
 		}
 
 		viper.MustBindEnv(k, envKey)
