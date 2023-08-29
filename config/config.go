@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/spf13/viper" // 配置管理
 	"log"
+	"os"
 	"reflect"
 	"strings"
 )
@@ -43,11 +44,32 @@ func init() {
 		return
 	}
 
+	for _, k := range viper.AllKeys() {
+		value := viper.GetString(k)
+		if strings.HasPrefix(value, "${") && strings.HasSuffix(value, "}") {
+			log.Printf("读取环境变量：%s\n", value)
+			viper.Set(k, getEnvOrPanic(
+				strings.TrimSuffix(
+					strings.TrimPrefix(value, "${"),
+					"}",
+				),
+			))
+		}
+	}
+
 	if err := viper.Unmarshal(Conf); err != nil {
 		log.Panicf("配置解析失败：%v\n", err)
 	}
 
 	fmt.Println(formatConfig("config", viper.AllSettings(), 0))
+}
+
+func getEnvOrPanic(env string) string {
+	res := os.Getenv(env)
+	if len(res) == 0 {
+		log.Panicln("环境变量", env, "未设置")
+	}
+	return res
 }
 
 func formatConfig(key string, value interface{}, indentLevel int) string {
