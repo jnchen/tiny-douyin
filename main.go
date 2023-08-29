@@ -6,6 +6,7 @@ import (
 	"douyin/router"
 	"douyin/service"
 	"github.com/gin-gonic/gin"
+	"log"
 )
 
 func main() {
@@ -20,6 +21,6 @@ func main() {
 
 	err := r.Run()
 	if err != nil {
-		return
+		log.Panicln("启动服务失败", err)
 	} // listen and serve on 0.0.0.0:8080 (for windows "localhost:8080")
 }

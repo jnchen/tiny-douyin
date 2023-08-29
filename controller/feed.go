@@ -13,23 +13,22 @@ import (
 func Feed(c *gin.Context) {
 	var req model.FeedRequest
 	if err := c.ShouldBindQuery(&req); nil != err {
-		c.JSON(http.StatusBadRequest, model.Response{
+		c.JSON(http.StatusOK, model.Response{
 			StatusCode: 1,
 			StatusMsg:  err.Error(),
 		})
 		return
 	}
 
-	// fmt.Println("请求时间", time.UnixMilli(req.LatestTime).Format("2006-01-02 15:04:05"))
+	const limit = 10
 	latestTime := time.UnixMilli(req.LatestTime)
 	if 0 == req.LatestTime {
 		latestTime = time.Now()
 	}
-	const limit = 10
 
 	videoListDAO, err := service.VideoList(latestTime, limit)
 	if nil != err {
-		c.JSON(http.StatusInternalServerError, model.Response{
+		c.JSON(http.StatusOK, model.Response{
 			StatusCode: 1,
 			StatusMsg:  err.Error(),
 		})
@@ -47,6 +46,11 @@ func Feed(c *gin.Context) {
 		// 但是为了不依赖于数据库的实现，这里还是遍历一遍
 		nextTime = integer.Int64Min(nextTime, video.CreatedAt.Unix())
 		videoList[i] = *video.ToModel()
+	}
+	if user, loginErr := service.CheckLogin(req.Token); nil == loginErr {
+		for i, video := range videoList {
+			videoList[i].IsFavorite, err = service.FavoriteCheck(user.Id, video.Id)
+		}
 	}
 	// fmt.Println("下次请求时间", time.Unix(nextTime, 0).Format("2006-01-02 15:04:05"))
 

@@ -1,45 +1,25 @@
 package controller
 
 import (
-	"douyin/config"
+	"bytes"
 	"douyin/model"
 	"douyin/service"
+	"douyin/storage/oss"
 	"douyin/util"
 	"fmt"
-	"github.com/disintegration/imaging"
 	"github.com/gin-gonic/gin"
+	"io"
 	"log"
+	"mime/multipart"
 	"net/http"
-	"os"
-	"path"
 	"path/filepath"
-	"strconv"
+	"time"
 )
 
 // Publish check token then save upload file to public directory
 func Publish(c *gin.Context) {
 	var req model.PublishActionRequest
 	if err := c.ShouldBind(&req); nil != err {
-		c.JSON(http.StatusBadRequest, model.Response{
-			StatusCode: 1,
-			StatusMsg:  err.Error(),
-		})
-		return
-	}
-
-	user, exist := service.CheckLogin(req.Token)
-	if !exist {
-		c.JSON(http.StatusOK, model.Response{
-			StatusCode: 1,
-			StatusMsg:  "用户不存在！",
-		})
-		return
-	}
-
-	data := req.Data
-	uuid := util.UUID()
-	userDir := filepath.Join("./public/videos", fmt.Sprintf("%d", user.Id))
-	if err := os.MkdirAll(userDir, os.ModePerm); nil != err {
 		c.JSON(http.StatusOK, model.Response{
 			StatusCode: 1,
 			StatusMsg:  err.Error(),
@@ -47,51 +27,74 @@ func Publish(c *gin.Context) {
 		return
 	}
 
-	videoFileName := fmt.Sprintf("%s%s", uuid, filepath.Ext(data.Filename))
-	videoFilePath := filepath.Join(userDir, videoFileName)
-	if err := c.SaveUploadedFile(data, videoFilePath); err != nil {
-		c.JSON(http.StatusOK, model.Response{
-			StatusCode: 1,
-			StatusMsg:  err.Error(),
-		})
+	file, err := req.Data.Open()
+	if nil != err {
+		log.Println("打开文件失败：", err)
 		return
 	}
-	playUrl := fmt.Sprintf("%s%s",
-		config.Conf.BaseURL,
-		path.Join("/static/videos/", fmt.Sprintf("%d", user.Id), videoFileName),
-	)
-
-	coverFileName := fmt.Sprintf("%s%s", uuid, ".jpg")
-	coverFilePath := filepath.Join(userDir, coverFileName)
-	coverUrl := "https://cdn.pixabay.com/photo/2016/03/27/18/10/bear-1283347_1280.jpg"
-	if img, err := util.ReadVideoSingleFrame(videoFilePath, 0); nil != err {
-		log.Println("获取视频封面失败：", err)
-	} else {
-		if err := imaging.Save(img, coverFilePath); nil != err {
-			log.Println("保存视频封面失败：", err)
-		} else {
-			coverUrl = fmt.Sprintf("%s%s",
-				config.Conf.BaseURL,
-				path.Join("/static/videos/", fmt.Sprintf("%d", user.Id), coverFileName),
-			)
+	defer func(file multipart.File) {
+		err := file.Close()
+		if err != nil {
+			log.Panicf("关闭文件失败：%s\n", err)
 		}
+	}(file)
+	buf := bytes.NewBuffer(nil)
+	if _, err := io.Copy(buf, file); nil != err {
+		log.Println("读取文件失败：", err)
+		return
 	}
+
+	data := buf.Bytes()
+	user := util.GetUser(c)
+	uuid := util.UUID()
+	userDir := fmt.Sprintf(
+		"videos/%s/%s",
+		fmt.Sprintf("%d", user.Id),
+		time.Now().Format("2006-01-02"),
+	)
+	videoFileName := uuid + filepath.Ext(req.Data.Filename)
+	videoFilePath := filepath.ToSlash(filepath.Join(userDir, videoFileName))
+	coverFileName := uuid + ".jpg"
+	coverFilePath := filepath.ToSlash(filepath.Join(userDir, coverFileName))
+	playUrl := oss.GetURL(videoFilePath)
+	coverUrl := oss.GetURL(coverFilePath)
+
+	resultUploading := make(chan error)
+	go func() {
+		// TODO: 失败重传
+		if err := oss.Upload(videoFilePath, data); err != nil {
+			log.Println("存储视频文件失败：", err)
+			resultUploading <- err
+			return
+		}
+		imgBytes, err := util.ReadSingleFrameAsBytes(playUrl, 1)
+		if nil != err {
+			log.Println("获取视频封面失败：", err)
+			resultUploading <- err
+		} else {
+			if err := oss.Upload(coverFilePath, imgBytes); nil != err {
+				log.Println("保存视频封面失败：", err)
+				resultUploading <- err
+			}
+		}
+		resultUploading <- nil
+	}()
 
 	// 插入视频信息
-	_, err := service.VideoPublish(
+	if _, err := service.VideoPublish(
 		user.Id,
 		playUrl,
 		coverUrl,
 		req.Title,
-	)
-	if nil != err {
-		// 删除视频文件
-		if err := os.Remove(videoFilePath); nil != err {
-			log.Printf("删除视频文件%s失败：%s\n", videoFilePath, err)
-		}
-		// 删除封面文件
-		if err := os.Remove(coverFilePath); nil != err {
-			log.Printf("删除封面文件%s失败：%s\n", coverFilePath, err)
+	); nil != err {
+		if err := <-resultUploading; nil == err {
+			if res, err := oss.Delete(videoFilePath, coverFilePath); nil != err {
+				log.Println("删除文件失败：", err)
+				log.Println("失败项目：")
+				for _, obj := range res.DeletedObjects {
+					log.Println("\t", obj)
+				}
+			}
 		}
 		c.JSON(http.StatusOK, model.Response{
 			StatusCode: 1,
@@ -108,25 +111,16 @@ func Publish(c *gin.Context) {
 
 // PublishList all users have same publish video list
 func PublishList(c *gin.Context) {
-	token := c.Query("token")
-	userId, err := strconv.ParseInt(c.Query("user_id"), 10, 64)
-	if nil != err {
+	var req model.PublishListRequest
+	if err := c.ShouldBind(&req); nil != err {
 		c.JSON(http.StatusOK, model.Response{
 			StatusCode: 1,
 			StatusMsg:  err.Error(),
 		})
 		return
 	}
-	_, exists := service.CheckLogin(token)
-	if !exists {
-		c.JSON(http.StatusOK, model.Response{
-			StatusCode: 1,
-			StatusMsg:  "用户不存在！",
-		})
-		return
-	}
 
-	videoPublishListDAO, err := service.VideoPublishList(userId)
+	videoPublishListDAO, err := service.VideoPublishList(req.UserId)
 	if nil != err {
 		c.JSON(http.StatusOK, model.Response{
 			StatusCode: 1,
@@ -138,6 +132,12 @@ func PublishList(c *gin.Context) {
 	videoPublishList := make([]model.Video, len(videoPublishListDAO))
 	for i, video := range videoPublishListDAO {
 		videoPublishList[i] = *video.ToModel()
+	}
+
+	if user := util.GetUser(c); nil != user {
+		for i, video := range videoPublishList {
+			videoPublishList[i].IsFavorite, _ = service.FavoriteCheck(user.Id, video.Id)
+		}
 	}
 
 	c.JSON(http.StatusOK, model.PublishListResponse{

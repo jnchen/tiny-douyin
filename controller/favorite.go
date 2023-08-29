@@ -3,32 +3,74 @@ package controller
 import (
 	"douyin/model"
 	"douyin/service"
+	"douyin/util"
 	"github.com/gin-gonic/gin"
 	"net/http"
 )
 
-type VideoListResponse struct {
-	model.Response
-	VideoList []model.Video `json:"video_list"`
-}
-
-// FavoriteAction no practical effect, just check if token is valid
 func FavoriteAction(c *gin.Context) {
-	token := c.Query("token")
-
-	if _, exist := service.CheckLogin(token); exist {
-		c.JSON(http.StatusOK, model.Response{StatusCode: 0})
-	} else {
-		c.JSON(http.StatusOK, model.Response{StatusCode: 1, StatusMsg: "User doesn't exist"})
+	var req model.FavoriteActionRequest
+	if err := c.ShouldBind(&req); err != nil {
+		c.JSON(http.StatusOK, model.Response{
+			StatusCode: 1,
+			StatusMsg:  err.Error(),
+		})
+		return
 	}
+
+	user := util.GetUser(c)
+	if req.ActionType == 1 {
+		if err := service.FavoriteAction(user.Id, req.VideoId); err != nil {
+			c.JSON(http.StatusOK, model.Response{
+				StatusCode: 1,
+				StatusMsg:  err.Error(),
+			})
+			return
+		}
+	} else if req.ActionType == 2 {
+		if err := service.FavoriteDelete(user.Id, req.VideoId); err != nil {
+			c.JSON(http.StatusOK, model.Response{
+				StatusCode: 1,
+				StatusMsg:  err.Error(),
+			})
+			return
+		}
+	}
+
+	c.JSON(http.StatusOK, model.Response{
+		StatusCode: 0,
+	})
 }
 
 // FavoriteList all users have same favorite video list
 func FavoriteList(c *gin.Context) {
-	c.JSON(http.StatusOK, VideoListResponse{
+	var req model.FavoriteListRequest
+	if err := c.ShouldBindQuery(&req); err != nil {
+		c.JSON(http.StatusOK, model.Response{
+			StatusCode: 1,
+			StatusMsg:  err.Error(),
+		})
+		return
+	}
+
+	videoDAOList, err := service.FavoriteList(req.UserId)
+	if err != nil {
+		c.JSON(http.StatusOK, model.Response{
+			StatusCode: 1,
+			StatusMsg:  err.Error(),
+		})
+		return
+	}
+
+	videoList := make([]model.Video, len(videoDAOList))
+	for i, videoDAO := range videoDAOList {
+		videoList[i] = *videoDAO.ToModel()
+	}
+
+	c.JSON(http.StatusOK, model.FavoriteListResponse{
 		Response: model.Response{
 			StatusCode: 0,
 		},
-		VideoList: DemoVideos,
+		VideoList: videoList,
 	})
 }

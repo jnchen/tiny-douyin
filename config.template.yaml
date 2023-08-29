@@ -1,0 +1,14 @@
+# 复制该模板文件，重命名为config.yaml
+base_url: "http://192.168.1.100:8080"
+mysql:
+  host: 127.0.0.1
+  port: 3306
+  options: "charset=utf8mb4&parseTime=True&loc=Local"
+  dbname: "douyin"
+  username: "root"
+  password: "********"
+oss:
+  endpoint: "oss-cn-hangzhou.aliyuncs.com"
+  bucket_name: "stickit-douyin"
+  access_key_id: "************************"
+  access_key_secret: "******************************"

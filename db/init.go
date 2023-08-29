@@ -6,6 +6,7 @@ import (
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
+	"log"
 )
 
 var DB *gorm.DB
@@ -25,37 +26,37 @@ func InitDatabase(config *config.MySQLConfig) {
 		PrepareStmt:    true,
 	})
 	if err != nil {
-		panic(fmt.Sprintln("数据库连接失败", err))
+		log.Panicln("数据库连接失败", err)
 	}
 
-	fmt.Println("数据库连接成功")
+	log.Println("数据库连接成功")
 
 	err = DB.Set("gorm:table_options", " COMMENT='用户表'").AutoMigrate(&User{})
 	if err != nil {
-		panic(fmt.Sprintln("初始化用户表失败", err))
+		log.Panicln("初始化用户表失败", err)
 	}
 	err = DB.Set("gorm:table_options", " COMMENT='用户登录状态表'").AutoMigrate(&UserToken{})
 	if err != nil {
-		panic(fmt.Sprintln("初始化用户登录状态表失败", err))
+		log.Panicln("初始化用户登录状态表失败", err)
 	}
 	err = DB.Set("gorm:table_options", " COMMENT='视频表'").AutoMigrate(&Video{})
 	if err != nil {
-		panic(fmt.Sprintln("初始化视频表失败", err))
+		log.Panicln("初始化视频表失败", err)
 	}
 	err = DB.Set("gorm:table_options", " COMMENT='消息表'").AutoMigrate(&Message{})
 	if err != nil {
-		panic(fmt.Sprintln("初始化消息表失败", err))
+		log.Panicln("初始化消息表失败", err)
 	}
 	err = DB.Set("gorm:table_options", " COMMENT='关注关系表'").AutoMigrate(&Follow{})
 	if err != nil {
-		panic(fmt.Sprintln("初始化关注关系表失败", err))
+		log.Panicln("初始化关注关系表失败", err)
 	}
 	err = DB.Set("gorm:table_options", " COMMENT='点赞记录表'").AutoMigrate(&Favorite{})
 	if err != nil {
-		panic(fmt.Sprintln("初始化点赞记录表失败", err))
+		log.Panicln("初始化点赞记录表失败", err)
 	}
 	err = DB.Set("gorm:table_options", " COMMENT='评论表'").AutoMigrate(&Comment{})
 	if err != nil {
-		panic(fmt.Sprintln("初始化评论表失败", err))
+		log.Panicln("初始化评论表失败", err)
 	}
 }

@@ -3,50 +3,33 @@ package controller
 import (
 	"douyin/model"
 	"douyin/service"
-	"net/http"
-	"strconv"
-
+	"douyin/util"
 	"github.com/gin-gonic/gin"
+	"net/http"
 )
 
-type CommentListResponse struct {
-	model.Response
-	CommentList []model.Comment `json:"comment_list,omitempty"`
-}
-
-type CommentActionResponse struct {
-	model.Response
-	Comment model.Comment `json:"comment,omitempty"`
-}
-
-// CommentAction no practical effect, just check if token is valid
+// CommentAction 发布评论或删除评论
 func CommentAction(c *gin.Context) {
 	var request model.CommentActionRequest
-
-	err := c.ShouldBind(&request)
-	if err != nil {
+	if err := c.ShouldBind(&request); err != nil {
 		c.JSON(http.StatusOK, model.CommentActionResponse{
 			Response: model.Response{StatusCode: 1, StatusMsg: err.Error()},
 		})
 		return
 	}
 
-	user, exist := service.CheckLogin(request.Token)
-	if !exist {
-		c.JSON(http.StatusOK, model.CommentActionResponse{
-			Response: model.Response{StatusCode: 1, StatusMsg: "User doesn't exist"},
-		})
-		return
-	}
-
+	user := util.GetUser(c)
 	if request.ActionType == 1 { // Post Comment
 		commentDAO, err := service.CommentPost(user.Id, request.VideoId, request.Content)
 		if err != nil {
-			c.JSON(http.StatusOK, model.Response{StatusCode: 1, StatusMsg: err.Error()})
+			c.JSON(
+				http.StatusOK,
+				model.Response{StatusCode: 1, StatusMsg: err.Error()},
+			)
 			return
 		}
 
-		c.JSON(http.StatusOK, CommentActionResponse{
+		c.JSON(http.StatusOK, model.CommentActionResponse{
 			Response: model.Response{StatusCode: 0},
 			Comment:  *commentDAO.ToModel(),
 		})
@@ -55,40 +38,34 @@ func CommentAction(c *gin.Context) {
 	if request.ActionType == 2 { // Delete Comment
 		err := service.CommentDelete(request.CommentId, request.VideoId)
 		if err != nil {
-			c.JSON(http.StatusOK, CommentActionResponse{
-				Response: model.Response{StatusCode: 1, StatusMsg: err.Error()},
+			c.JSON(http.StatusOK, model.CommentActionResponse{
+				Response: model.Response{
+					StatusCode: 1,
+					StatusMsg:  err.Error(),
+				},
 			})
 			return
 		}
 	}
 
-	c.JSON(http.StatusOK, CommentActionResponse{
+	c.JSON(http.StatusOK, model.CommentActionResponse{
 		Response: model.Response{StatusCode: 0},
 	})
 }
 
-// CommentList all videos have same demo comment list
+// CommentList 获取视频评论列表
 func CommentList(c *gin.Context) {
-	token := c.Query("token")
-	videoId, err := strconv.ParseInt(c.Query("video_id"), 10, 64)
-	if err != nil {
-		c.JSON(http.StatusOK, CommentListResponse{
+	var req model.CommentListRequest
+	if err := c.ShouldBindQuery(&req); err != nil {
+		c.JSON(http.StatusOK, model.CommentListResponse{
 			Response: model.Response{StatusCode: 1, StatusMsg: err.Error()},
 		})
 		return
 	}
 
-	_, exist := service.CheckLogin(token)
-	if !exist {
-		c.JSON(http.StatusOK, CommentListResponse{
-			Response: model.Response{StatusCode: 1, StatusMsg: "User doesn't exist"},
-		})
-		return
-	}
-
-	commentListDAO, err := service.CommentList(videoId)
+	commentListDAO, err := service.CommentList(req.VideoId)
 	if err != nil {
-		c.JSON(http.StatusOK, CommentListResponse{
+		c.JSON(http.StatusOK, model.CommentListResponse{
 			Response: model.Response{StatusCode: 1, StatusMsg: err.Error()},
 		})
 		return
@@ -99,7 +76,7 @@ func CommentList(c *gin.Context) {
 		commentList[i] = *commentDAO.ToModel()
 	}
 
-	c.JSON(http.StatusOK, CommentListResponse{
+	c.JSON(http.StatusOK, model.CommentListResponse{
 		Response:    model.Response{StatusCode: 0},
 		CommentList: commentList,
 	})
