@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/spf13/viper" // 配置管理
 	"log"
-	"os"
 	"reflect"
 	"strings"
 )
@@ -35,26 +34,34 @@ type OSSConfig struct {
 
 func init() {
 	log.Println("解析配置")
+
 	viper.AddConfigPath(".")
 	viper.SetConfigName("config")
 	viper.SetConfigType("yaml")
+	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+	viper.AutomaticEnv()
 
 	if err := viper.ReadInConfig(); err != nil {
 		log.Panicf("配置读取失败：%v\n", err)
-		return
 	}
 
-	for _, k := range viper.AllKeys() {
+	// 模板解析
+	for i, k := range viper.AllKeys() {
 		value := viper.GetString(k)
-		if strings.HasPrefix(value, "${") && strings.HasSuffix(value, "}") {
-			log.Printf("读取环境变量：%s\n", value)
-			viper.Set(k, getEnvOrPanic(
-				strings.TrimSuffix(
-					strings.TrimPrefix(value, "${"),
-					"}",
-				),
-			))
+		if !strings.HasPrefix(value, "${") || !strings.HasSuffix(value, "}") {
+			continue
 		}
+
+		envKey, defaultValue, defaultExists := parseEnvTemplate(value)
+
+		log.Printf("%d.\t%s 绑定环境变量 %s", i, k, envKey)
+		log.Println("\t读取环境变量", envKey)
+		if defaultExists {
+			log.Println("\t默认值\t", defaultValue)
+			viper.SetDefault(k, defaultValue)
+		}
+
+		viper.MustBindEnv(k, envKey)
 	}
 
 	if err := viper.Unmarshal(Conf); err != nil {
@@ -64,12 +71,24 @@ func init() {
 	fmt.Println(formatConfig("config", viper.AllSettings(), 0))
 }
 
-func getEnvOrPanic(env string) string {
-	res := os.Getenv(env)
-	if len(res) == 0 {
-		log.Panicln("环境变量", env, "未设置")
-	}
-	return res
+func parseEnvTemplate(envTemplate string) (
+	envKey string,
+	defaultValue string,
+	defaultExists bool,
+) {
+	// 去除 "${" 和 "}"
+	envTemplate = strings.TrimSuffix(
+		strings.TrimPrefix(envTemplate, "${"),
+		"}",
+	)
+	// 获取环境变量名和默认值
+	envKey, defaultValue, defaultExists = strings.Cut(envTemplate, ":")
+	// 去除默认值首尾空格和双引号
+	defaultValue = strings.Trim(
+		strings.TrimSpace(defaultValue),
+		"\"",
+	)
+	return
 }
 
 func formatConfig(key string, value interface{}, indentLevel int) string {
