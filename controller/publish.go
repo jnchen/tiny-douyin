@@ -133,12 +133,6 @@ func PublishList(c *gin.Context) {
 		videoPublishList[i] = *video.ToModel()
 	}
 
-	if user := util.GetUser(c); nil != user {
-		for i, video := range videoPublishList {
-			videoPublishList[i].IsFavorite, _ = service.FavoriteCheck(user.Id, video.Id)
-		}
-	}
-
 	c.JSON(http.StatusOK, model.PublishListResponse{
 		Response: model.Response{
 			StatusCode: 0,

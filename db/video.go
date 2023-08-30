@@ -20,6 +20,11 @@ type Video struct {
 	UpdatedAt     time.Time `gorm:"comment:更新时间"`
 }
 
+type VideoWithFavorite struct {
+	Video
+	IsFavorite bool `gorm:"->;column:is_favorite;comment:是否已经收藏"`
+}
+
 // ToModel 转换为model.Video，请确保Author不为空。
 func (video *Video) ToModel() *model.Video {
 	return &model.Video{
@@ -29,7 +34,21 @@ func (video *Video) ToModel() *model.Video {
 		CoverUrl:      video.CoverUrl,
 		FavoriteCount: video.FavoriteCount,
 		CommentCount:  video.CommentCount,
-		IsFavorite:    false, // 默认为false，可以在业务逻辑中设置
+		IsFavorite:    false,
+		Title:         video.Title,
+	}
+}
+
+// ToModel 转换为model.Video，请确保Author不为空。
+func (video *VideoWithFavorite) ToModel() *model.Video {
+	return &model.Video{
+		Id:            video.ID,
+		Author:        *video.Author.ToModel(),
+		PlayUrl:       video.PlayUrl,
+		CoverUrl:      video.CoverUrl,
+		FavoriteCount: video.FavoriteCount,
+		CommentCount:  video.CommentCount,
+		IsFavorite:    video.IsFavorite,
 		Title:         video.Title,
 	}
 }

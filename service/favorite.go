@@ -5,21 +5,6 @@ import (
 	"gorm.io/gorm"
 )
 
-func FavoriteCheck(userId int64, videoId int64) (bool, error) {
-	var favorite db.Favorite
-	result := db.DB.
-		Where("user_id = ? and video_id = ?", userId, videoId).
-		Limit(1).
-		Find(&favorite)
-	if nil != result.Error {
-		return false, result.Error
-	}
-	if result.RowsAffected == 0 {
-		return false, nil
-	}
-	return true, nil
-}
-
 func FavoriteAction(userId int64, videoId int64) error {
 	favorite := db.Favorite{
 		UserID:  userId,

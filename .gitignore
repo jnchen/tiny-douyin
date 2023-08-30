@@ -23,6 +23,7 @@ go.work
 .idea
 
 public/videos/
+public/test_videos/
 bin/
 .1024feature-file
 douyin

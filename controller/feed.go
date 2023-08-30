@@ -26,7 +26,13 @@ func Feed(c *gin.Context) {
 		latestTime = time.Now()
 	}
 
-	videoListDAO, err := service.VideoList(latestTime, limit)
+	var userId int64 = -1
+	user, err := service.CheckLogin(req.Token)
+	if nil == err {
+		userId = user.Id
+	}
+
+	videoListDAO, err := service.VideoList(userId, latestTime, limit)
 	if nil != err {
 		c.JSON(http.StatusOK, model.Response{
 			StatusCode: 1,
@@ -46,11 +52,6 @@ func Feed(c *gin.Context) {
 		// 但是为了不依赖于数据库的实现，这里还是遍历一遍
 		nextTime = integer.Int64Min(nextTime, video.CreatedAt.Unix())
 		videoList[i] = *video.ToModel()
-	}
-	if user, loginErr := service.CheckLogin(req.Token); nil == loginErr {
-		for i, video := range videoList {
-			videoList[i].IsFavorite, err = service.FavoriteCheck(user.Id, video.Id)
-		}
 	}
 	// fmt.Println("下次请求时间", time.Unix(nextTime, 0).Format("2006-01-02 15:04:05"))
 
