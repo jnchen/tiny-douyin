@@ -1,4 +1,4 @@
-{ pkgs ? import <nixpkgs-23.05> {} }: 
+{ pkgs ? import <nixpkgs-23.05> {} }:
 pkgs.mkShell {
     shellHook = ''
         alias ll="ls -l"
@@ -7,14 +7,21 @@ pkgs.mkShell {
         export GO111MODULE=on
         export GOPROXY=https://goproxy.cn,direct
         export PATH=$PATH:~/go/bin
+        pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple > /tmp/nix.log
     '';
     packages = [
+        (pkgs.python310.withPackages (ps: with ps; [
+          numpy
+          opencv4
+          pillow
+        ]))
         # env
         pkgs.go
         pkgs.mysql80
         pkgs.redis
-        pkgs.postgresql
         pkgs.ffmpeg
+        pkgs.python310
+        pkgs.python310Packages.pip
         # lsp
         pkgs.gopls
         pkgs.glibcLocales
