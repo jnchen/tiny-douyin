@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/rand"
 	"net/http"
+	"path/filepath"
 	"testing"
 )
 
@@ -65,31 +66,56 @@ func TestUserAction(t *testing.T) {
 func TestPublish(t *testing.T) {
 	e := newExpect(t)
 
-	userId, token := getTestUserToken(testUserA, e)
+	testVideoDir := filepath.Join("../public", "test_videos")
+	testUserPaths, err := filepath.Glob(filepath.Join(testVideoDir, "[A-Z]*"))
+	if nil != err {
+		t.Fatal(err)
+	}
+	for _, testUserPath := range testUserPaths {
+		letters := filepath.Base(testUserPath)
+		userId, token := getTestUserToken(letters, e)
 
-	publishResp := e.POST("/douyin/publish/action/").
-		WithMultipart().
-		WithFile("data", "../public/bear.mp4").
-		WithFormField("token", token).
-		WithFormField("title", "Bear").
-		Expect().
-		Status(http.StatusOK).
-		JSON().Object()
-	publishResp.Value("status_code").Number().IsEqual(0)
+		testVideoPaths, err := filepath.Glob(filepath.Join(
+			testVideoDir,
+			letters,
+			"[0-9]*.mp4",
+		))
+		if nil != err {
+			t.Fatal(err)
+		}
 
-	publishListResp := e.GET("/douyin/publish/list/").
-		WithQuery("user_id", userId).WithQuery("token", token).
-		Expect().
-		Status(http.StatusOK).
-		JSON().Object()
-	publishListResp.Value("status_code").Number().IsEqual(0)
-	publishListResp.Value("video_list").Array().Length().Gt(0)
+		t.Log("Testing publish")
+		for _, testVideoPath := range testVideoPaths {
+			title := letters + filepath.Base(testVideoPath)
+			publishResp := e.POST("/douyin/publish/action/").
+				WithMultipart().
+				WithFile("data", testVideoPath).
+				WithFormField("token", token).
+				WithFormField("title", title).
+				Expect().
+				Status(http.StatusOK).
+				JSON().Object()
+			publishResp.Value("status_code").Number().IsEqual(0)
+		}
+		t.Log("Tested publish")
 
-	for _, element := range publishListResp.Value("video_list").Array().Iter() {
-		video := element.Object()
-		video.ContainsKey("id")
-		video.ContainsKey("author")
-		video.Value("play_url").String().NotEmpty()
-		video.Value("cover_url").String().NotEmpty()
+		t.Log("Testing publish list")
+		publishListResp := e.GET("/douyin/publish/list/").
+			WithQuery("user_id", userId).WithQuery("token", token).
+			Expect().
+			Status(http.StatusOK).
+			JSON().Object()
+		publishListResp.Value("status_code").Number().IsEqual(0)
+		publishListResp.Value("video_list").Array().Length().IsEqual(len(testVideoPaths))
+
+		for _, element := range publishListResp.Value("video_list").Array().Iter() {
+			video := element.Object()
+			video.ContainsKey("id")
+			video.ContainsKey("author")
+			video.Value("play_url").String().NotEmpty()
+			video.Value("cover_url").String().NotEmpty()
+			video.Value("title").String().NotEmpty()
+		}
+		t.Log("Tested publish list")
 	}
 }
