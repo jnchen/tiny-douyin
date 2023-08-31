@@ -4,6 +4,7 @@ import (
 	"douyin/config"
 	"fmt"
 	"io"
+	"net/url"
 	"os"
 	path2 "path"
 	"path/filepath"
@@ -15,11 +16,21 @@ type LocalStorage struct {
 }
 
 func (LocalStorage) GetURL(path string) string {
-	return fmt.Sprintf(
-		"%s/%s",
-		strings.TrimSuffix(config.Conf.StorageConfig.Local.BaseURL, "/"),
-		path2.Join("static", path),
+	scheme, baseURLWithoutScheme, found := strings.Cut(
+		config.Conf.StorageConfig.Local.BaseURL,
+		"://",
 	)
+	if !found {
+		baseURLWithoutScheme = scheme
+		scheme = "https"
+	}
+
+	u := url.URL{
+		Scheme: scheme,
+		Host:   baseURLWithoutScheme,
+		Path:   path2.Join("static", path),
+	}
+	return u.String()
 }
 
 func (LocalStorage) Upload(path string, reader io.Reader) error {
