@@ -1,11 +1,11 @@
-# 导入必要的库
+import multiprocessing
 import os
+import random
+import subprocess
+import traceback
+
 import cv2
 import numpy as np
-import random
-import multiprocessing
-import subprocess
-from typing import List
 from PIL import Image, ImageDraw, ImageFont
 
 test_videos_directory = "test_videos"
@@ -22,24 +22,24 @@ def generate_video(
     size=(640, 480),
     bg_color=(54, 47, 0),  # b g r
     text_color=(227, 246, 253),
+    font=ImageFont.truetype("LXGWWenKaiMono.ttf", 64),
 ) -> bool:
+    temp_video_path = video_path + ".temp.mp4"
     try:
-        temp_video_path = video_path + ".temp.mp4"
         # 计算倒计时的初始值，假设每一秒减一
         countdown = duration
         # 计算视频的总帧数
         frames = (duration + 1) * fps
-
         # 创建一个图像对象，默认分辨率为 *size
         image = Image.fromarray(np.full((*size, 3), bg_color, dtype=np.uint8))
-
         # 创建一个绘制对象和字体对象
-        draw = ImageDraw.Draw(image, mode="RGB")
-        font = ImageFont.truetype("arial.ttf", 64)
+        draw = ImageDraw.Draw(image)
 
         # 获取指定字符串和倒计时的宽度和高度
-        text_width, text_height = draw.textsize(text, font=font)
-        countdown_width, countdown_height = draw.textsize(str(countdown), font=font)
+        text_width, text_height = draw.textbbox((0, 0), text, font=font)[2:]
+        countdown_width, countdown_height = draw.textbbox(
+            (0, 0), str(countdown), font=font
+        )[2:]
 
         # 计算指定字符串和倒计时的位置
         text_x = (image.width - text_width) // 2
@@ -50,7 +50,7 @@ def generate_video(
         # 创建一个视频写入对象，格式为 MP4，默认帧率为 fps，分辨率为 *size
         video_writer = cv2.VideoWriter(
             temp_video_path,
-            cv2.VideoWriter_fourcc(*"mp4v"),
+            cv2.VideoWriter.fourcc(*"mp4v"),
             float(fps),
             (image.width, image.height),
             True,
@@ -65,8 +65,7 @@ def generate_video(
             )
 
             # 将图像对象转换为 numpy 数组，并写入视频文件中
-            frame = np.array(image)
-            video_writer.write(frame)
+            video_writer.write(np.array(image))
 
             # 如果是每一秒的最后一帧，就更新倒计时的值
             if i % fps == fps - 1:
@@ -78,7 +77,7 @@ def generate_video(
 
                 # 否则，重新创建一个空白的图像对象和绘制对象
                 image = Image.fromarray(np.full((*size, 3), bg_color, dtype=np.uint8))
-                draw = ImageDraw.Draw(image, mode="RGB")
+                draw = ImageDraw.Draw(image)
 
         # 关闭视频写入对象，并释放资源
         video_writer.release()
@@ -124,6 +123,7 @@ def generate_video(
         return False
     except Exception as e:
         print(e)
+        traceback.print_exc()
         return False
     finally:
         # 删除临时视频文件
@@ -179,7 +179,7 @@ def main():
         print(e)
 
     # 使用一个循环来遍历所有字母
-    for i in range(32):
+    for i in range(1):
         # 生成一个随机的视频数量，范围为 1 到 10
         num = random.randint(1, 10)
 
