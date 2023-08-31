@@ -2,6 +2,7 @@ import multiprocessing
 import os
 import random
 import subprocess
+import sys
 import traceback
 
 import cv2
@@ -134,16 +135,19 @@ def generate_video(
 
 
 # 定义一个函数，用于接收一个字符串和一个视频数量，然后生成对应的视频
-def generate_videos(letters: str, num: int) -> int:
+def generate_videos(letters: str, num_videos: int) -> int:
+    print(f"开始生成 {letters} 用户的 {num_videos} 个测试视频")
+
     video_dir = os.path.join(test_videos_directory, letters)
+
     try:
         os.mkdir(video_dir)
     except FileExistsError as e:
-        print(e)
+        pass
 
     num_successfully_generated = 0
     # 使用一个循环来生成多个视频
-    for j in range(num):
+    for j in range(num_videos):
         # 生成一个由字母和下标组成的 text
         text = f"{letters}{j + 1}"
         # 生成一个随机的时长，范围为 0 到 10
@@ -168,26 +172,26 @@ def num_to_alpha(num: int) -> str:
 
 
 def main():
+    try:
+        os.mkdir(test_videos_directory)
+    except FileExistsError as e:
+        pass
+
+    # 使用程序参数来指定要生成用户的数量
+    num_users = int(sys.argv[1]) if len(sys.argv) > 1 else 1
+    print(f"开始生成 {num_users} 个用户的测试视频")
+
     # 创建一个空的进程池
     prc_pool = multiprocessing.Pool()
     # 创建一个空的列表，用于存储所有的结果
     results = []
 
-    try:
-        os.mkdir(test_videos_directory)
-    except FileExistsError as e:
-        print(e)
-
     # 使用一个循环来遍历所有字母
-    for i in range(1):
-        # 生成一个随机的视频数量，范围为 1 到 10
-        num = random.randint(1, 10)
-
+    for i in range(num_users):
         letters = num_to_alpha(i)
-
+        num_videos = random.randint(1, 16)
         # 创建一个进程对象，并传入相应的参数
-        result = prc_pool.apply_async(generate_videos, args=(letters, num))
-
+        result = prc_pool.apply_async(generate_videos, args=(letters, num_videos))
         # 将进程对象添加到列表中
         results.append(result)
 
