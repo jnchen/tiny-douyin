@@ -64,13 +64,14 @@ func TestUserAction(t *testing.T) {
 }
 
 func TestPublish(t *testing.T) {
-	e := newExpect(t)
-
 	testVideoDir := filepath.Join("../public", "test_videos")
 	testUserPaths, err := filepath.Glob(filepath.Join(testVideoDir, "[A-Z]*"))
 	if nil != err {
 		t.Fatal(err)
 	}
+
+	e := newExpect(t)
+	eWithoutRequestBodyLogging := newExpectWithoutRequestBodyLogging(t)
 	for _, testUserPath := range testUserPaths {
 		letters := filepath.Base(testUserPath)
 		userId, token := getTestUserToken(letters, e)
@@ -84,10 +85,9 @@ func TestPublish(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		t.Log("Testing publish")
 		for _, testVideoPath := range testVideoPaths {
 			title := letters + filepath.Base(testVideoPath)
-			publishResp := e.POST("/douyin/publish/action/").
+			publishResp := eWithoutRequestBodyLogging.POST("/douyin/publish/action/").
 				WithMultipart().
 				WithFile("data", testVideoPath).
 				WithFormField("token", token).
@@ -97,9 +97,7 @@ func TestPublish(t *testing.T) {
 				JSON().Object()
 			publishResp.Value("status_code").Number().IsEqual(0)
 		}
-		t.Log("Tested publish")
 
-		t.Log("Testing publish list")
 		publishListResp := e.GET("/douyin/publish/list/").
 			WithQuery("user_id", userId).WithQuery("token", token).
 			Expect().
@@ -116,6 +114,5 @@ func TestPublish(t *testing.T) {
 			video.Value("cover_url").String().NotEmpty()
 			video.Value("title").String().NotEmpty()
 		}
-		t.Log("Tested publish list")
 	}
 }

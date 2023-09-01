@@ -21,6 +21,17 @@ func newExpect(t *testing.T) *httpexpect.Expect {
 	})
 }
 
+func newExpectWithoutRequestBodyLogging(t *testing.T) *httpexpect.Expect {
+	return httpexpect.WithConfig(httpexpect.Config{
+		Client:   http.DefaultClient,
+		BaseURL:  serverAddr,
+		Reporter: httpexpect.NewAssertReporter(t),
+		Printers: []httpexpect.Printer{
+			httpexpect.NewDebugPrinter(t, false),
+		},
+	})
+}
+
 func getTestUserToken(user string, e *httpexpect.Expect) (int, string) {
 	registerResp := e.POST("/douyin/user/register/").
 		WithQuery("username", user).WithQuery("password", "123456").

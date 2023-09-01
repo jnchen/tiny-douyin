@@ -12,10 +12,14 @@ import (
 	"sync"
 )
 
-type LocalStorage struct {
+type Local struct {
 }
 
-func (LocalStorage) GetURL(path string) string {
+func GetLocalPath(path string) string {
+	return filepath.Join(config.Conf.StorageConfig.Local.Path, path)
+}
+
+func (*Local) GetURL(path string) string {
 	scheme, baseURLWithoutScheme, found := strings.Cut(
 		config.Conf.StorageConfig.Local.BaseURL,
 		"://",
@@ -33,9 +37,7 @@ func (LocalStorage) GetURL(path string) string {
 	return u.String()
 }
 
-func (LocalStorage) Upload(path string, reader io.Reader) error {
-	path = filepath.Join(config.Conf.StorageConfig.Local.Path, path)
-
+func SaveAsLocalFile(path string, reader io.Reader) error {
 	if err := os.MkdirAll(filepath.Dir(path), 0750); nil != err {
 		return err
 	}
@@ -52,7 +54,12 @@ func (LocalStorage) Upload(path string, reader io.Reader) error {
 	return err
 }
 
-func (LocalStorage) Delete(path ...string) ([]string, error) {
+func (*Local) Upload(path string, reader io.Reader) error {
+	path = filepath.Join(config.Conf.StorageConfig.Local.Path, path)
+	return SaveAsLocalFile(path, reader)
+}
+
+func (*Local) Delete(path ...string) ([]string, error) {
 	var totalErr error
 	success := make([]string, len(path))
 	var wg sync.WaitGroup

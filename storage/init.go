@@ -2,7 +2,7 @@ package storage
 
 import (
 	"douyin/config"
-	"github.com/aliyun/aliyun-oss-go-sdk/oss"
+	aliyunoss "github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"io"
 	"log"
 )
@@ -13,30 +13,33 @@ type Storage interface {
 	Delete(path ...string) (deleted []string, err error)
 }
 
-var Impl Storage
+var local = &Local{}
+var oss *OSS
 
-var ossClient *oss.Client
-var ossBucket *oss.Bucket
+func GetStorage() Storage {
+	if config.Conf.StorageConfig.OSS.Enable {
+		return oss
+	}
+	return local
+}
 
 func init() {
 	if config.Conf.StorageConfig.OSS.Enable {
 		log.Println("初始化OSS")
+		oss = &OSS{}
 		var err error
-		ossClient, err = oss.New(
+
+		if oss.ossClient, err = aliyunoss.New(
 			config.Conf.StorageConfig.OSS.Endpoint,
 			config.Conf.StorageConfig.OSS.AccessKeyID,
 			config.Conf.StorageConfig.OSS.AccessKeySecret,
-		)
-		if err != nil {
+		); err != nil {
 			log.Panicln("初始化OSSClient失败", err)
 		}
-		ossBucket, err = ossClient.Bucket(config.Conf.StorageConfig.OSS.BucketName)
-		if err != nil {
+		if oss.ossBucket, err = oss.ossClient.Bucket(
+			config.Conf.StorageConfig.OSS.BucketName,
+		); err != nil {
 			log.Panicln("初始化OSSBucket失败", err)
 		}
-		Impl = OSSStorage{}
-	} else {
-		log.Println("初始化LocalStorage")
-		Impl = LocalStorage{}
 	}
 }

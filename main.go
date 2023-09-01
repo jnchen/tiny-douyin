@@ -7,9 +7,20 @@ import (
 	"douyin/service"
 	"github.com/gin-gonic/gin"
 	"log"
+	"net/http"
+	_ "net/http/pprof"
+	"os"
 )
 
 func main() {
+	go func() {
+		log.Println("启动pprof服务")
+		if err := http.ListenAndServe(":8081", nil); err != nil {
+			log.Fatal(err)
+		}
+		os.Exit(0)
+	}()
+
 	// 初始化Database
 	db.InitDatabase(config.Conf.MySQLConfig)
 

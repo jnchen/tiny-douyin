@@ -3,11 +3,9 @@ package service
 import (
 	"douyin/db"
 	"errors"
-	"fmt"
-	"time"
 )
 
-func VideoPublish(
+func PublishAction(
 	userId int64,
 	videoUrl, coverUrl,
 	title string,
@@ -29,7 +27,7 @@ func VideoPublish(
 	return &video, nil
 }
 
-func VideoPublishList(userId int64) ([]db.Video, error) {
+func PublishList(userId int64) ([]db.Video, error) {
 	var videoPublishList []db.Video
 	result := db.DB.Preload("Author").
 		Where("author_id = ?", userId).
@@ -41,25 +39,4 @@ func VideoPublishList(userId int64) ([]db.Video, error) {
 		return nil, errors.New("获取视频发布列表失败！")
 	}
 	return videoPublishList, nil
-}
-
-func VideoList(userId int64, latestTime time.Time, limit int) ([]db.VideoWithFavorite, error) {
-	var videoList []db.VideoWithFavorite
-	result := db.DB.
-		Model(&db.Video{}).
-		Preload("Author").
-		Select("video.*, favorite.user_id IS NOT NULL AS is_favorite").
-		Joins("LEFT JOIN favorite ON video.id = favorite.video_id AND favorite.user_id = ?", userId).
-		Where("video.created_at < ?", latestTime).
-		Order("video.created_at DESC").
-		Limit(limit).
-		Find(&videoList)
-	if nil != result.Error {
-		return nil, result.Error
-	}
-	fmt.Println(userId)
-	for i, video := range videoList {
-		fmt.Println(i, video.IsFavorite)
-	}
-	return videoList, nil
 }

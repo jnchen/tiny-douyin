@@ -21,16 +21,18 @@ def generate_video(
     duration,
     fps=30,
     size=(640, 480),
-    bg_color=(54, 47, 0),  # b g r
-    text_color=(227, 246, 253),
+    bg_color=(0, 43, 54),
+    text_color=(253, 246, 227),
     font=ImageFont.truetype("LXGWWenKaiMono.ttf", 64),
 ) -> bool:
     temp_video_path = video_path + ".temp.mp4"
     try:
         # 计算倒计时的初始值，假设每一秒减一
         countdown = duration
-        # 计算视频的总帧数
-        frames = (duration + 1) * fps
+        # 转换为 BGR 格式
+        bg_color = bg_color[::-1]
+        text_color = text_color[::-1]
+
         # 创建一个图像对象，默认分辨率为 *size
         image = Image.fromarray(np.full((*size, 3), bg_color, dtype=np.uint8))
         # 创建一个绘制对象和字体对象
@@ -48,6 +50,10 @@ def generate_video(
         countdown_x = (image.width - countdown_width) // 2
         countdown_y = (image.height - countdown_height) * 3 // 4
 
+        # 计算视频的总帧数
+        frames = (duration + 1) * fps
+        # 使用一个循环来生成视频帧
+        image_array = None
         # 创建一个视频写入对象，格式为 MP4，默认帧率为 fps，分辨率为 *size
         video_writer = cv2.VideoWriter(
             temp_video_path,
@@ -56,29 +62,25 @@ def generate_video(
             (image.width, image.height),
             True,
         )
-
-        # 使用一个循环来生成视频帧
         for i in range(frames):
-            # 绘制指定字符串和倒计时在图像对象上，颜色为白色
-            draw.text((text_x, text_y), text, fill=text_color, font=font)
-            draw.text(
-                (countdown_x, countdown_y), str(countdown), fill=text_color, font=font
-            )
-
-            # 将图像对象转换为 numpy 数组，并写入视频文件中
-            video_writer.write(np.array(image))
-
-            # 如果是每一秒的最后一帧，就更新倒计时的值
-            if i % fps == fps - 1:
-                # 如果倒计时已经结束，就跳出循环
-                if countdown < 0:
-                    break
-
-                countdown -= 1
-
-                # 否则，重新创建一个空白的图像对象和绘制对象
+            # 每隔 fps 帧绘制一次指定字符串和倒计时
+            if i % fps == 0:
+                # 绘制指定字符串和倒计时在图像对象上，颜色为白色
+                draw.text((text_x, text_y), text, fill=text_color, font=font)
+                draw.text(
+                    (countdown_x, countdown_y),
+                    str(countdown),
+                    fill=text_color,
+                    font=font,
+                )
+                image_array = np.array(image)
                 image = Image.fromarray(np.full((*size, 3), bg_color, dtype=np.uint8))
                 draw = ImageDraw.Draw(image)
+            elif i % fps == fps - 1:
+                countdown -= 1
+
+            # 将图像对象转换为 numpy 数组，并写入视频文件中
+            video_writer.write(image_array)
 
         # 关闭视频写入对象，并释放资源
         video_writer.release()
@@ -142,7 +144,7 @@ def generate_videos(letters: str, num_videos: int) -> int:
 
     try:
         os.mkdir(video_dir)
-    except FileExistsError as e:
+    except FileExistsError:
         pass
 
     num_successfully_generated = 0
@@ -174,7 +176,7 @@ def num_to_alpha(num: int) -> str:
 def main():
     try:
         os.mkdir(test_videos_directory)
-    except FileExistsError as e:
+    except FileExistsError:
         pass
 
     # 使用程序参数来指定要生成用户的数量

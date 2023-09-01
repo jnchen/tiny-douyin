@@ -3,14 +3,16 @@ package storage
 import (
 	"douyin/config"
 	"fmt"
-	"github.com/aliyun/aliyun-oss-go-sdk/oss"
+	aliyunoss "github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"io"
 )
 
-type OSSStorage struct {
+type OSS struct {
+	ossClient *aliyunoss.Client
+	ossBucket *aliyunoss.Bucket
 }
 
-func (OSSStorage) GetURL(path string) string {
+func (*OSS) GetURL(path string) string {
 	return fmt.Sprintf(
 		"https://%s.%s/%s",
 		config.Conf.StorageConfig.OSS.BucketName,
@@ -19,15 +21,15 @@ func (OSSStorage) GetURL(path string) string {
 	)
 }
 
-func (OSSStorage) Upload(path string, reader io.Reader) error {
-	return ossBucket.PutObject(
+func (o *OSS) Upload(path string, reader io.Reader) error {
+	return o.ossBucket.PutObject(
 		path,
 		reader,
-		oss.ObjectACL(oss.ACLPublicRead),
+		aliyunoss.ObjectACL(aliyunoss.ACLPublicRead),
 	)
 }
 
-func (OSSStorage) Delete(path ...string) ([]string, error) {
-	res, err := ossBucket.DeleteObjects(path)
+func (o *OSS) Delete(path ...string) ([]string, error) {
+	res, err := o.ossBucket.DeleteObjects(path)
 	return res.DeletedObjects, err
 }

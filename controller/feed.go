@@ -32,7 +32,7 @@ func Feed(c *gin.Context) {
 		userId = user.Id
 	}
 
-	videoListDAO, err := service.VideoList(userId, latestTime, limit)
+	videoListDAO, err := service.FeedList(userId, latestTime, limit)
 	if nil != err {
 		c.JSON(http.StatusOK, model.Response{
 			StatusCode: 1,
