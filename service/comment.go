@@ -39,7 +39,11 @@ func CommentDelete(commentId, videoID int64) error {
 
 func CommentList(videoId int64) ([]db.Comment, error) {
 	var commentList []db.Comment
-	result := db.ORM().Preload("User").Where("video_id = ?", videoId).Find(&commentList)
+	result := db.ORM().
+		Preload("User").
+		Where("video_id = ?", videoId).
+		Order("created_at DESC").
+		Find(&commentList)
 	if nil != result.Error {
 		return nil, result.Error
 	}
