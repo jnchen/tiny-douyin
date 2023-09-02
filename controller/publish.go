@@ -25,11 +25,24 @@ func handleUploading(
 ) {
 	defer close(result)
 
-	// TODO: 失败后？
+	var err error
+	uploaded := make([]string, 0, 2)
+
+	// 处理错误
+	defer func() {
+		result <- err
+		if nil == err {
+			return
+		}
+
+		if err = store.Delete(uploaded...); nil != err {
+			log.Println("删除文件失败：", err)
+		}
+	}()
+
 	file, err := req.Data.Open()
 	if nil != err {
 		log.Println("打开视频文件失败：", err)
-		result <- err
 		return
 	}
 	defer func(file multipart.File) {
@@ -38,9 +51,9 @@ func handleUploading(
 
 	if err = store.Upload(videoFilePath, file); err != nil {
 		log.Println("存储视频文件失败：", err)
-		result <- err
 		return
 	}
+	uploaded = append(uploaded, videoFilePath)
 
 	var tempVideoFilePath string
 	switch store.(type) {
@@ -55,12 +68,10 @@ func handleUploading(
 		_, err = file.Seek(0, 0)
 		if err != nil {
 			log.Println("重置视频文件指针失败：", err)
-			result <- err
 			return
 		}
 		if err = storage.SaveAsLocalFile(tempVideoFilePath, file); err != nil {
 			log.Println("保存临时视频文件失败：", err)
-			result <- err
 			return
 		}
 	}
@@ -68,7 +79,6 @@ func handleUploading(
 	imgBytes, err := util.ReadSingleFrameAsBytes(tempVideoFilePath, 1)
 	if nil != err {
 		log.Println("获取视频封面失败：", err)
-		result <- err
 		return
 	}
 
@@ -77,11 +87,9 @@ func handleUploading(
 		bytes.NewReader(imgBytes),
 	); nil != err {
 		log.Println("保存视频封面失败：", err)
-		result <- err
 		return
 	}
-
-	result <- nil
+	uploaded = append(uploaded, coverFilePath)
 }
 
 // Publish check token then save upload file to public directory
@@ -120,28 +128,29 @@ func Publish(c *gin.Context) {
 	)
 
 	// 插入视频信息
-	if _, err := service.PublishAction(
+	video, err := service.PublishAction(
 		user.Id,
 		playUrl,
 		coverUrl,
 		req.Title,
-	); nil != err {
-		if err := <-resultUploading; nil == err {
-			deleted, err := store.Delete(
-				videoFilePath,
-				coverFilePath,
-			)
-			if nil != err {
-				log.Println("删除文件失败：", err)
-			}
-
-			for _, path := range deleted {
-				log.Println("删除文件成功：", path)
-			}
-		}
+	)
+	if nil != err {
 		c.JSON(http.StatusOK, model.Response{
 			StatusCode: 1,
 			StatusMsg:  err.Error(),
+		})
+		return
+	}
+
+	// 等待上传完成
+	errUploading := <-resultUploading
+	if nil != errUploading {
+		if err = service.PublishDelete(video.ID); nil != err {
+			log.Printf("删除视频（id %d）信息失败：%v", video.ID, err)
+		}
+		c.JSON(http.StatusOK, model.Response{
+			StatusCode: 1,
+			StatusMsg:  errUploading.Error(),
 		})
 		return
 	}

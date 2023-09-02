@@ -18,7 +18,7 @@ func UserTokenCreate(id int64) (string, error) {
 	}
 	expireAt := time.Now().Add(timeDuration)
 
-	if result := db.DB.Create(&db.UserToken{
+	if result := db.ORM().Create(&db.UserToken{
 		UserId:   id,
 		Token:    token,
 		ExpireAt: expireAt,
@@ -31,7 +31,7 @@ func UserTokenCreate(id int64) (string, error) {
 
 func CheckLogin(token string) (*model.User, error) {
 	var userToken db.UserToken
-	result := db.DB.Where("token = ?", token).Limit(1).Find(&userToken)
+	result := db.ORM().Where("token = ?", token).Limit(1).Find(&userToken)
 	if result.Error != nil {
 		return nil, result.Error
 	}
@@ -45,12 +45,12 @@ func CheckLogin(token string) (*model.User, error) {
 				ID: userToken.ID,
 			},
 		}
-		db.DB.Delete(&delCond)
+		db.ORM().Delete(&delCond)
 		return nil, errors.New("token已过期")
 	}
 
 	var userInfo db.User
-	result = db.DB.Where("id = ?", userToken.UserId).First(&userInfo)
+	result = db.ORM().Where("id = ?", userToken.UserId).First(&userInfo)
 	if result.Error != nil {
 		return nil, result.Error
 	}
@@ -67,7 +67,7 @@ func UserLogin(username string, password string) (int64, error) {
 		return 0, err
 	}
 	var user db.User
-	result := db.DB.Where("username = ? and password = ?", username, passwordMd5).First(&user)
+	result := db.ORM().Where("username = ? and password = ?", username, passwordMd5).First(&user)
 	if nil != result.Error {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 			return 0, errors.New("用户名或密码错误")

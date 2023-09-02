@@ -12,7 +12,7 @@ func CommentPost(userId int64, videoId int64, content string) (*db.Comment, erro
 		Content: content,
 	}
 	// 创建后加载对象，方便直接调用ToModel方法
-	result := db.DB.Preload("User").Create(&comment).First(&comment)
+	result := db.ORM().Preload("User").Create(&comment).First(&comment)
 	if nil != result.Error {
 		return nil, result.Error
 	}
@@ -27,7 +27,7 @@ func CommentDelete(commentId, videoID int64) error {
 		ID:      commentId,
 		VideoID: videoID,
 	}
-	result := db.DB.Delete(&comment)
+	result := db.ORM().Delete(&comment)
 	if nil != result.Error {
 		return result.Error
 	}
@@ -39,7 +39,7 @@ func CommentDelete(commentId, videoID int64) error {
 
 func CommentList(videoId int64) ([]db.Comment, error) {
 	var commentList []db.Comment
-	result := db.DB.Preload("User").Where("video_id = ?", videoId).Find(&commentList)
+	result := db.ORM().Preload("User").Where("video_id = ?", videoId).Find(&commentList)
 	if nil != result.Error {
 		return nil, result.Error
 	}

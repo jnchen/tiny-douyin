@@ -1,7 +1,6 @@
 package main
 
 import (
-	"douyin/config"
 	"douyin/db"
 	"douyin/router"
 	"douyin/service"
@@ -9,20 +8,20 @@ import (
 	"log"
 	"net/http"
 	_ "net/http/pprof"
-	"os"
 )
 
 func main() {
 	go func() {
 		log.Println("启动pprof服务")
-		if err := http.ListenAndServe(":8081", nil); err != nil {
-			log.Fatal(err)
-		}
-		os.Exit(0)
+		log.Fatal(http.ListenAndServe(":8081", nil))
 	}()
 
-	// 初始化Database
-	db.InitDatabase(config.Conf.MySQLConfig)
+	defer func() {
+		if err := db.SQL().Close(); err != nil {
+			log.Println("关闭数据库连接失败", err)
+		}
+		log.Println("关闭数据库连接")
+	}()
 
 	go service.RunMessageServer()
 

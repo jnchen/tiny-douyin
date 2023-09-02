@@ -10,15 +10,14 @@ import (
 )
 
 func UserExists(username string) (bool, error) {
-	var count int64
-	result := db.DB.Model(&db.User{}).Where("username = ?", username).Count(&count)
+	result := db.ORM().Where("username = ?", username).Find(&db.User{})
 	if nil != result.Error {
 		return false, result.Error
 	}
 	if result.RowsAffected == 0 {
 		return false, nil
 	}
-	return count > 0, nil
+	return true, nil
 }
 
 func UserCreate(username string, password string) (*db.User, error) {
@@ -31,7 +30,6 @@ func UserCreate(username string, password string) (*db.User, error) {
 		return nil, err
 	}
 	user := db.User{
-		Name:     username,
 		Username: username,
 		Password: passwordMd5,
 		Avatar: fmt.Sprintf(
@@ -42,7 +40,7 @@ func UserCreate(username string, password string) (*db.User, error) {
 		CreatedAt:       time.Time{},
 		UpdatedAt:       time.Time{},
 	}
-	result := db.DB.Create(&user)
+	result := db.ORM().Create(&user)
 	if nil != result.Error {
 		return nil, result.Error
 	}

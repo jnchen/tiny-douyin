@@ -10,7 +10,7 @@ func FavoriteAction(userId int64, videoId int64) error {
 		UserID:  userId,
 		VideoID: videoId,
 	}
-	result := db.DB.Create(&favorite)
+	result := db.ORM().Create(&favorite)
 	if nil != result.Error {
 		return result.Error
 	}
@@ -22,8 +22,8 @@ func FavoriteDelete(userId int64, videoId int64) error {
 		UserID:  userId,
 		VideoID: videoId,
 	}
-	result := db.DB.
-		Where("user_id = ? and video_id = ?", favorite.UserID, favorite.VideoID).
+	result := db.ORM().
+		// Where("user_id = ? and video_id = ?", favorite.UserID, favorite.VideoID).
 		Delete(&favorite)
 	if nil != result.Error {
 		return result.Error
@@ -36,7 +36,7 @@ func FavoriteDelete(userId int64, videoId int64) error {
 
 func FavoriteList(userId int64) ([]db.Video, error) {
 	var videoList []db.Video
-	result := db.DB.Preload("Author").
+	result := db.ORM().Preload("Author").
 		Joins("JOIN favorite ON favorite.video_id = video.id").
 		Where("favorite.user_id = ?", userId).
 		Find(&videoList)

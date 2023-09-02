@@ -7,7 +7,7 @@ import (
 
 func FeedList(userId int64, latestTime time.Time, limit int) ([]db.VideoWithFavorite, error) {
 	var videoList []db.VideoWithFavorite
-	result := db.DB.
+	result := db.ORM().
 		Model(&db.Video{}).
 		Preload("Author").
 		Select("video.*, favorite.user_id IS NOT NULL AS is_favorite").

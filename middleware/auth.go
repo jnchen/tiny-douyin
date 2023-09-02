@@ -10,16 +10,11 @@ import (
 
 func Auth(isTokenRequired bool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		var auth model.Auth
-		if err := c.ShouldBind(&auth); err != nil {
-			c.JSON(http.StatusOK, model.Response{
-				StatusCode: 1,
-				StatusMsg:  err.Error(),
-			})
-			c.Abort()
-			return
+		token, exists := c.GetQuery("token")
+		if !exists {
+			token, exists = c.GetPostForm("token")
 		}
-		token := strings.TrimSpace(auth.Token)
+		token = strings.TrimSpace(token)
 
 		// 如果不需要token，直接跳过
 		if !isTokenRequired && token == "" {
@@ -28,21 +23,19 @@ func Auth(isTokenRequired bool) gin.HandlerFunc {
 		}
 
 		if token == "" {
-			c.JSON(http.StatusOK, model.Response{
+			c.AbortWithStatusJSON(http.StatusOK, model.Response{
 				StatusCode: 1,
 				StatusMsg:  "请登录！",
 			})
-			c.Abort()
 			return
 		}
 
 		user, err := service.CheckLogin(token)
 		if err != nil {
-			c.JSON(http.StatusOK, model.Response{
+			c.AbortWithStatusJSON(http.StatusOK, model.Response{
 				StatusCode: 1,
 				StatusMsg:  err.Error(),
 			})
-			c.Abort()
 			return
 		}
 

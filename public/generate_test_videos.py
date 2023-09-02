@@ -214,7 +214,6 @@ def main():
     print("成功生成", sum_successfully_generated, "个视频")
 
 
-multiprocessing.freeze_support()
-
 if __name__ == "__main__":
+    multiprocessing.freeze_support()
     main()

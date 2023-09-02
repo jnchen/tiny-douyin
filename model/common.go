@@ -1,9 +1,5 @@
 package model
 
-type Auth struct {
-	Token string `json:"token" form:"token" xml:"token"`
-}
-
 type Response struct {
 	StatusCode int32  `json:"status_code"`
 	StatusMsg  string `json:"status_msg,omitempty"`

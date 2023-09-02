@@ -7,10 +7,10 @@ import (
 
 // Favorite 点赞 用户-视频
 type Favorite struct {
-	ID        int64     `gorm:"primary_key;type:bigint;auto_increment;comment:点赞id"`
-	UserID    int64     `gorm:"type:bigint;comment:用户id"`
+	// ID        int64     `gorm:"primary_key;type:bigint;auto_increment;comment:点赞id"`
+	UserID    int64     `gorm:"primary_key;type:bigint;comment:用户id"`
 	User      User      `gorm:"foreignKey:UserID;references:ID;association_autoupdate:false;association_autocreate:false;comment:用户信息"`
-	VideoID   int64     `gorm:"type:bigint;comment:视频id"`
+	VideoID   int64     `gorm:"primary_key;type:bigint;comment:视频id"`
 	Video     Video     `gorm:"foreignKey:VideoID;references:ID;association_autoupdate:false;association_autocreate:false;comment:视频信息"`
 	CreatedAt time.Time `gorm:"comment:创建时间"`
 	UpdatedAt time.Time `gorm:"comment:更新时间"`
@@ -40,7 +40,7 @@ func (favorite *Favorite) AfterCreate(tx *gorm.DB) (err error) {
 
 	// 更新用户的被点赞数
 	favorite.Video.ID = favorite.VideoID
-	if err = DB.Select("author_id").
+	if err = orm.Select("author_id").
 		First(&favorite.Video).Error; err != nil {
 		return
 	}
@@ -80,7 +80,7 @@ func (favorite *Favorite) BeforeDelete(tx *gorm.DB) (err error) {
 
 	// 更新用户的被点赞数
 	favorite.Video.ID = favorite.VideoID
-	if err = DB.Select("author_id").
+	if err = orm.Select("author_id").
 		First(&favorite.Video).Error; err != nil {
 		return
 	}

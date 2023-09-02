@@ -12,11 +12,11 @@ import (
 var Conf = new(TotalConfig)
 
 type TotalConfig struct {
-	*MySQLConfig   `mapstructure:"mysql"`
-	*StorageConfig `mapstructure:"storage"`
+	*MySQL   `mapstructure:"mysql"`
+	*Storage `mapstructure:"storage"`
 }
 
-type MySQLConfig struct {
+type MySQL struct {
 	Host     string `mapstructure:"host"`
 	Username string `mapstructure:"username"`
 	Password string `mapstructure:"password"`
@@ -25,7 +25,7 @@ type MySQLConfig struct {
 	Port     int    `mapstructure:"port"`
 }
 
-type StorageConfig struct {
+type Storage struct {
 	Local struct {
 		Path    string `mapstructure:"path"`
 		BaseURL string `mapstructure:"base_url"`

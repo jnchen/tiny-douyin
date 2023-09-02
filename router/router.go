@@ -28,8 +28,16 @@ func InitRouter(r *gin.Engine) {
 		middleware.Auth(true),
 		controller.UserInfo,
 	)
-	apiRouter.POST("/user/register/", controller.Register)
-	apiRouter.POST("/user/login/", controller.Login)
+	apiRouter.POST(
+		"/user/register/",
+		// middleware.QPSLimit(3),
+		controller.Register,
+	)
+	apiRouter.POST(
+		"/user/login/",
+		// middleware.QPSLimit(3),
+		controller.Login,
+	)
 	apiRouter.POST(
 		"/publish/action/",
 		middleware.Auth(true),
@@ -54,6 +62,7 @@ func InitRouter(r *gin.Engine) {
 	)
 	apiRouter.POST(
 		"/comment/action/",
+		// middleware.QPSLimit(1000),
 		middleware.Auth(true),
 		controller.CommentAction,
 	)

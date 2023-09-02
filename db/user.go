@@ -8,8 +8,7 @@ import (
 // User 用户
 type User struct {
 	ID              int64     `gorm:"primary_key;type:bigint;auto_increment;comment:用户id"`
-	Name            string    `gorm:"type:varchar(200);comment:用户名称"`
-	Username        string    `gorm:"type:varchar(200);comment:用户登录名"`
+	Username        string    `gorm:"type:varchar(200);uniqueIndex;comment:用户登录名"`
 	Password        string    `gorm:"type:varchar(100);comment:用户密码"`
 	Avatar          string    `gorm:"type:varchar(512);comment:头像地址"`
 	BackgroundImage string    `gorm:"type:varchar(1024);comment:背景地址"`
@@ -24,7 +23,7 @@ type User struct {
 func (user *User) ToModel() *model.User {
 	return &model.User{
 		Id:              user.ID,
-		Name:            user.Name,
+		Name:            user.Username,
 		FollowCount:     0, // TODO
 		FollowerCount:   0, // TODO
 		IsFollow:        false,

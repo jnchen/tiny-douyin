@@ -2,7 +2,7 @@ package storage
 
 import (
 	"douyin/config"
-	"fmt"
+	"douyin/util"
 	"io"
 	"net/url"
 	"os"
@@ -16,12 +16,12 @@ type Local struct {
 }
 
 func GetLocalPath(path string) string {
-	return filepath.Join(config.Conf.StorageConfig.Local.Path, path)
+	return filepath.Join(config.Conf.Storage.Local.Path, path)
 }
 
-func (*Local) GetURL(path string) string {
+func (Local) GetURL(path string) string {
 	scheme, baseURLWithoutScheme, found := strings.Cut(
-		config.Conf.StorageConfig.Local.BaseURL,
+		config.Conf.Storage.Local.BaseURL,
 		"://",
 	)
 	if !found {
@@ -54,36 +54,38 @@ func SaveAsLocalFile(path string, reader io.Reader) error {
 	return err
 }
 
-func (*Local) Upload(path string, reader io.Reader) error {
-	path = filepath.Join(config.Conf.StorageConfig.Local.Path, path)
-	return SaveAsLocalFile(path, reader)
+func (Local) Upload(path string, reader io.Reader) error {
+	path = filepath.Join(config.Conf.Storage.Local.Path, path)
+	if err := SaveAsLocalFile(path, reader); err != nil {
+		return UploadingError{err, path}
+	}
+	return nil
 }
 
-func (*Local) Delete(path ...string) ([]string, error) {
-	var totalErr error
-	success := make([]string, len(path))
+func (Local) Delete(path ...string) error {
+	if len(path) == 0 {
+		return nil
+	}
+
+	deletingErrs := util.NewConcurrentSlice[error]()
 	var wg sync.WaitGroup
 
-	for i, p := range path {
+	for _, p := range path {
 		wg.Add(1)
-		go func(i int, p string) {
+		go func(p string) {
 			defer wg.Done()
-			fullPath := filepath.Join(config.Conf.StorageConfig.Local.Path, p)
-			if err := os.Remove(fullPath); err != nil {
-				totalErr = fmt.Errorf("%v\n%v", totalErr, err)
-			} else {
-				success[i] = p
+			fullPath := filepath.Join(config.Conf.Storage.Local.Path, p)
+			err := os.Remove(fullPath)
+			if err == nil {
+				return
 			}
-		}(i, p)
+			deletingErrs.Append(err)
+		}(p)
 	}
 	wg.Wait()
 
-	var deletedFiles []string
-	for _, p := range success {
-		if p != "" {
-			deletedFiles = append(deletedFiles, p)
-		}
+	if deletingErrs.Len() > 0 {
+		return DeletingError{errs: deletingErrs.RawSlice()}
 	}
-
-	return deletedFiles, totalErr
+	return nil
 }

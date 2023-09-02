@@ -22,15 +22,12 @@ func Register(c *gin.Context) {
 		return
 	}
 
-	exist, err := service.UserExists(req.UserName)
-	if err != nil {
+	if exist, err := service.UserExists(req.UserName); err != nil {
 		c.JSON(http.StatusOK, model.UserLoginResponse{
 			Response: model.Response{StatusCode: 1, StatusMsg: err.Error()},
 		})
 		return
-	}
-
-	if exist {
+	} else if exist {
 		c.JSON(http.StatusOK, model.UserLoginResponse{
 			Response: model.Response{StatusCode: 1, StatusMsg: "User already exist"},
 		})

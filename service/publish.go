@@ -17,7 +17,7 @@ func PublishAction(
 		Title:    title,
 	}
 	// 创建后加载对象，方便直接调用ToModel方法
-	result := db.DB.Preload("Author").Create(&video).First(&video)
+	result := db.ORM().Preload("Author").Create(&video).First(&video)
 	if nil != result.Error {
 		return nil, result.Error
 	}
@@ -27,9 +27,20 @@ func PublishAction(
 	return &video, nil
 }
 
+func PublishDelete(videoId int64) error {
+	result := db.ORM().Delete(&db.Video{}, videoId)
+	if nil != result.Error {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return errors.New("删除视频失败！")
+	}
+	return nil
+}
+
 func PublishList(userId int64) ([]db.Video, error) {
 	var videoPublishList []db.Video
-	result := db.DB.Preload("Author").
+	result := db.ORM().Preload("Author").
 		Where("author_id = ?", userId).
 		Find(&videoPublishList)
 	if nil != result.Error {
