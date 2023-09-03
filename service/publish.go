@@ -46,8 +46,5 @@ func PublishList(userId int64) ([]db.Video, error) {
 	if nil != result.Error {
 		return nil, result.Error
 	}
-	if result.RowsAffected == 0 {
-		return nil, errors.New("获取视频发布列表失败！")
-	}
 	return videoPublishList, nil
 }
