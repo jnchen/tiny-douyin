@@ -17,7 +17,11 @@ func PublishAction(
 		Title:    title,
 	}
 	// 创建后加载对象，方便直接调用ToModel方法
-	result := db.ORM().Preload("Author").Create(&video).First(&video)
+	result := db.ORM().
+		Preload("Author").
+		Create(&video).
+		Limit(1).
+		Find(&video)
 	if nil != result.Error {
 		return nil, result.Error
 	}

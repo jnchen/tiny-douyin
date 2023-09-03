@@ -7,7 +7,6 @@ import (
 
 // Favorite 点赞 用户-视频
 type Favorite struct {
-	// ID        int64     `gorm:"primary_key;type:bigint;auto_increment;comment:点赞id"`
 	UserID    int64     `gorm:"primary_key;type:bigint;comment:用户id"`
 	User      User      `gorm:"foreignKey:UserID;references:ID;association_autoupdate:false;association_autocreate:false;comment:用户信息"`
 	VideoID   int64     `gorm:"primary_key;type:bigint;comment:视频id"`

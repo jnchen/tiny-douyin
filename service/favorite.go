@@ -2,7 +2,7 @@ package service
 
 import (
 	"douyin/db"
-	"gorm.io/gorm"
+	"errors"
 )
 
 func FavoriteAction(userId int64, videoId int64) error {
@@ -23,20 +23,20 @@ func FavoriteDelete(userId int64, videoId int64) error {
 		VideoID: videoId,
 	}
 	result := db.ORM().
-		// Where("user_id = ? and video_id = ?", favorite.UserID, favorite.VideoID).
 		Delete(&favorite)
 	if nil != result.Error {
 		return result.Error
 	}
 	if result.RowsAffected == 0 {
-		return gorm.ErrRecordNotFound
+		return errors.New("取消点赞失败")
 	}
 	return nil
 }
 
 func FavoriteList(userId int64) ([]db.Video, error) {
 	var videoList []db.Video
-	result := db.ORM().Preload("Author").
+	result := db.ORM().
+		Preload("Author").
 		Joins("JOIN favorite ON favorite.video_id = video.id").
 		Where("favorite.user_id = ?", userId).
 		Find(&videoList)

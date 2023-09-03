@@ -17,7 +17,7 @@ func CommentPost(userId int64, videoId int64, content string) (*db.Comment, erro
 		return nil, result.Error
 	}
 	if result.RowsAffected == 0 {
-		return nil, errors.New("sql execution failed")
+		return nil, errors.New("发表评论失败")
 	}
 	return &comment, nil
 }
@@ -32,7 +32,7 @@ func CommentDelete(commentId, videoID int64) error {
 		return result.Error
 	}
 	if result.RowsAffected == 0 {
-		return errors.New("sql execution failed")
+		return errors.New("删除评论失败")
 	}
 	return nil
 }

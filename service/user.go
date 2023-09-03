@@ -10,7 +10,10 @@ import (
 )
 
 func UserExists(username string) (bool, error) {
-	result := db.ORM().Where("username = ?", username).Find(&db.User{})
+	result := db.ORM().
+		Where("username = ?", username).
+		Limit(1).
+		Find(&db.User{})
 	if nil != result.Error {
 		return false, result.Error
 	}
@@ -45,7 +48,7 @@ func UserCreate(username string, password string) (*db.User, error) {
 		return nil, result.Error
 	}
 	if result.RowsAffected == 0 {
-		return nil, errors.New("sql执行失败")
+		return nil, errors.New("创建用户失败")
 	}
 	return &user, nil
 }
