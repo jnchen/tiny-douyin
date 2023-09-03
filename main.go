@@ -4,17 +4,12 @@ import (
 	"douyin/db"
 	"douyin/router"
 	"douyin/service"
+	"github.com/gin-contrib/pprof"
 	"github.com/gin-gonic/gin"
 	"log"
-	"net/http"
-	_ "net/http/pprof"
 )
 
 func main() {
-	go func() {
-		log.Println("启动pprof服务")
-		log.Fatal(http.ListenAndServe(":8081", nil))
-	}()
 
 	defer func() {
 		if err := db.SQL().Close(); err != nil {
@@ -27,9 +22,11 @@ func main() {
 
 	r := gin.Default()
 
+	pprof.Register(r)
+
 	router.InitRouter(r)
 
-	err := r.Run()
+	err := r.Run(":8080")
 	if err != nil {
 		log.Panicln("启动服务失败", err)
 	} // listen and serve on 0.0.0.0:8080 (for windows "localhost:8080")
