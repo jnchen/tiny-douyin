@@ -6,7 +6,7 @@
 ## 运行方式
 
 ```shell
-go build && ./douyin
+go build &&  ./douyin
 ```
 
 ### 主要依赖库
