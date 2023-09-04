@@ -10,7 +10,6 @@ import (
 )
 
 func main() {
-
 	defer func() {
 		if err := db.SQL().Close(); err != nil {
 			log.Println("关闭数据库连接失败", err)
@@ -21,9 +20,7 @@ func main() {
 	go service.RunMessageServer()
 
 	r := gin.Default()
-
 	pprof.Register(r)
-
 	router.InitRouter(r)
 
 	err := r.Run(":8080")
