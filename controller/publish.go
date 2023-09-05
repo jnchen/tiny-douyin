@@ -58,7 +58,7 @@ func handleUploading(
 	var tempVideoFilePath string
 	switch store.(type) {
 	case *storage.Local:
-		tempVideoFilePath = storage.GetLocalPath(videoFilePath)
+		tempVideoFilePath = storage.GetLocalStorage().GetLocalPath(videoFilePath)
 	case *storage.OSS:
 		tempVideoFilePath = filepath.Join(
 			os.TempDir(),
@@ -70,7 +70,7 @@ func handleUploading(
 			log.Println("重置视频文件指针失败：", err)
 			return
 		}
-		if err = storage.SaveAsLocalFile(tempVideoFilePath, file); err != nil {
+		if err = util.SaveAsLocalFile(tempVideoFilePath, file); err != nil {
 			log.Println("保存临时视频文件失败：", err)
 			return
 		}

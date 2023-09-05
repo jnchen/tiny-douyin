@@ -9,9 +9,10 @@ import (
 	"strings"
 )
 
-var Conf = new(TotalConfig)
+var conf = new(TotalConfig)
 
 type TotalConfig struct {
+	Release  bool `mapstructure:"release"`
 	*MySQL   `mapstructure:"mysql"`
 	*Storage `mapstructure:"storage"`
 }
@@ -39,17 +40,21 @@ type Storage struct {
 	} `mapstructure:"oss"`
 }
 
-func init() {
+func GetConfig() *TotalConfig {
+	return conf
+}
+
+func Init(configName, configType string) (*TotalConfig, error) {
 	log.Println("解析配置")
 
 	viper.AddConfigPath(".")
-	viper.SetConfigName("config")
-	viper.SetConfigType("yaml")
+	viper.SetConfigName(configName)
+	viper.SetConfigType(configType)
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	viper.AutomaticEnv()
 
 	if err := viper.ReadInConfig(); err != nil {
-		log.Panicf("配置读取失败：%v\n", err)
+		return nil, fmt.Errorf("配置读取失败：%w", err)
 	}
 
 	// 模板解析
@@ -69,17 +74,21 @@ func init() {
 				log.Println("\t默认值\t\t", defaultValue)
 				viper.Set(k, defaultValue)
 			} else {
-				log.Panicf("环境变量 %s 不存在或为空\n", envKey)
+				return nil, fmt.Errorf("环境变量 %s 不存在或为空\n", envKey)
 			}
 		}
 
 		viper.MustBindEnv(k, envKey)
 	}
 
-	if err := viper.Unmarshal(Conf); err != nil {
-		log.Panicf("配置解析失败：%v\n", err)
+	if err := viper.Unmarshal(conf); err != nil {
+		return nil, fmt.Errorf("配置解析失败：%w", err)
 	}
 
+	return conf, nil
+}
+
+func Print() {
 	fmt.Println(formatConfig("config", viper.AllSettings(), 0))
 }
 

@@ -3,11 +3,20 @@ package router
 import (
 	"douyin/controller"
 	"douyin/middleware"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"net/http"
 )
 
-func InitRouter(r *gin.Engine) {
+func Init(r *gin.Engine) error {
+	r.ForwardedByClientIP = true
+	err := r.SetTrustedProxies([]string{"127.0.0.1"})
+	if err != nil {
+		return fmt.Errorf("设置信任代理失败：%w", err)
+	}
+
+	r.Use(gin.Logger(), gin.Recovery())
+
 	// public directory is used to serve static resources
 	r.Static("/static", "./public")
 	r.LoadHTMLGlob("templates/*")
@@ -79,4 +88,6 @@ func InitRouter(r *gin.Engine) {
 	apiRouter.GET("/relation/friend/list/", controller.FriendList)
 	apiRouter.GET("/message/chat/", controller.MessageChat)
 	apiRouter.POST("/message/action/", controller.MessageAction)
+
+	return nil
 }

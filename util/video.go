@@ -8,7 +8,7 @@ import (
 
 func ReadSingleFrameAsBytes(videoPath string, frameNum int) ([]byte, error) {
 	buf := bytes.NewBuffer(nil)
-	err := ffmpeg.Input(videoPath).
+	if err := ffmpeg.Input(videoPath).
 		Filter("select", ffmpeg.Args{
 			fmt.Sprintf("gte(n,%d)", frameNum),
 		}).
@@ -18,8 +18,7 @@ func ReadSingleFrameAsBytes(videoPath string, frameNum int) ([]byte, error) {
 			"vcodec":  "mjpeg",
 		}).
 		WithOutput(buf).
-		Run()
-	if err != nil {
+		Run(); err != nil {
 		return nil, err
 	}
 	return buf.Bytes(), nil

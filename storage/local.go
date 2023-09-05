@@ -1,27 +1,27 @@
 package storage
 
 import (
-	"douyin/config"
 	"douyin/util"
 	"io"
 	"net/url"
 	"os"
-	path2 "path"
 	"path/filepath"
 	"strings"
 	"sync"
 )
 
 type Local struct {
+	localRoot string
+	baseURL   string
 }
 
-func GetLocalPath(path string) string {
-	return filepath.Join(config.Conf.Storage.Local.Path, path)
+func (l *Local) GetLocalPath(path string) string {
+	return filepath.Join(l.localRoot, path)
 }
 
-func (Local) GetURL(path string) string {
+func (l *Local) GetURL(path string) string {
 	scheme, baseURLWithoutScheme, found := strings.Cut(
-		config.Conf.Storage.Local.BaseURL,
+		l.baseURL,
 		"://",
 	)
 	if !found {
@@ -32,37 +32,25 @@ func (Local) GetURL(path string) string {
 	u := url.URL{
 		Scheme: scheme,
 		Host:   baseURLWithoutScheme,
-		Path:   path2.Join("static", path),
+		Path: strings.Replace(
+			filepath.ToSlash(l.GetLocalPath(path)),
+			"public",
+			"static",
+			1,
+		),
 	}
 	return u.String()
 }
 
-func SaveAsLocalFile(path string, reader io.Reader) error {
-	if err := os.MkdirAll(filepath.Dir(path), 0750); nil != err {
-		return err
-	}
-
-	dst, err := os.Create(path)
-	if err != nil {
-		return err
-	}
-	defer func(dst *os.File) {
-		_ = dst.Close()
-	}(dst)
-
-	_, err = io.Copy(dst, reader)
-	return err
-}
-
-func (Local) Upload(path string, reader io.Reader) error {
-	path = filepath.Join(config.Conf.Storage.Local.Path, path)
-	if err := SaveAsLocalFile(path, reader); err != nil {
+func (l *Local) Upload(path string, reader io.Reader) error {
+	path = l.GetLocalPath(path)
+	if err := util.SaveAsLocalFile(path, reader); err != nil {
 		return UploadingError{err, path}
 	}
 	return nil
 }
 
-func (Local) Delete(path ...string) error {
+func (l *Local) Delete(path ...string) error {
 	if len(path) == 0 {
 		return nil
 	}
@@ -74,7 +62,7 @@ func (Local) Delete(path ...string) error {
 		wg.Add(1)
 		go func(p string) {
 			defer wg.Done()
-			fullPath := filepath.Join(config.Conf.Storage.Local.Path, p)
+			fullPath := l.GetLocalPath(p)
 			err := os.Remove(fullPath)
 			if err == nil {
 				return

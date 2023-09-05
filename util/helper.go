@@ -9,6 +9,8 @@ import (
 	"math/rand"
 	"net/http"
 	"net/url"
+	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -78,4 +80,21 @@ func RandomImageURL(category []string) string {
 	}
 
 	return randomImageResponse.URL
+}
+
+func SaveAsLocalFile(path string, reader io.Reader) error {
+	if err := os.MkdirAll(filepath.Dir(path), 0750); nil != err {
+		return err
+	}
+
+	dst, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+	defer func(dst *os.File) {
+		_ = dst.Close()
+	}(dst)
+
+	_, err = io.Copy(dst, reader)
+	return err
 }

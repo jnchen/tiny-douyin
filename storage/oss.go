@@ -1,22 +1,24 @@
 package storage
 
 import (
-	"douyin/config"
 	"fmt"
 	aliyunoss "github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"io"
 )
 
 type OSS struct {
+	bucketName string
+	endpoint   string
+
 	ossClient *aliyunoss.Client
 	ossBucket *aliyunoss.Bucket
 }
 
-func (*OSS) GetURL(path string) string {
+func (o *OSS) GetURL(path string) string {
 	return fmt.Sprintf(
 		"https://%s.%s/%s",
-		config.Conf.Storage.OSS.BucketName,
-		config.Conf.Storage.OSS.Endpoint,
+		o.bucketName,
+		o.endpoint,
 		path,
 	)
 }

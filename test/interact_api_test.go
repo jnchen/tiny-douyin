@@ -1,21 +1,27 @@
 package test
 
 import (
+	"github.com/gavv/httpexpect/v2"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/suite"
 	"net/http"
 	"testing"
 )
 
-func TestFavorite(t *testing.T) {
-	e := newExpect(t)
+type InteractAPITestSuite struct {
+	APITestSuite
+}
+
+func (s *InteractAPITestSuite) testFavorite() {
+	e := s.newHTTPExpect(httpexpect.NewDebugPrinter(s.T(), false))
 
 	feedResp := e.GET("/douyin/feed/").Expect().Status(http.StatusOK).JSON().Object()
-	feedResp.Value("status_code").Number().Equal(0)
+	feedResp.Value("status_code").Number().IsEqual(0)
 	feedResp.Value("video_list").Array().Length().Gt(0)
-	firstVideo := feedResp.Value("video_list").Array().First().Object()
+	firstVideo := feedResp.Value("video_list").Array().Value(0).Object()
 	videoId := firstVideo.Value("id").Number().Raw()
 
-	userId, token := getTestUserToken(testUserA, e)
+	userId, token := getTestUserToken(s.testUserA, s.password, e)
 
 	favoriteResp := e.POST("/douyin/favorite/action/").
 		WithQuery("token", token).WithQuery("video_id", videoId).WithQuery("action_type", 1).
@@ -23,7 +29,7 @@ func TestFavorite(t *testing.T) {
 		Expect().
 		Status(http.StatusOK).
 		JSON().Object()
-	favoriteResp.Value("status_code").Number().Equal(0)
+	favoriteResp.Value("status_code").Number().IsEqual(0)
 
 	favoriteListResp := e.GET("/douyin/favorite/list/").
 		WithQuery("token", token).WithQuery("user_id", userId).
@@ -31,7 +37,7 @@ func TestFavorite(t *testing.T) {
 		Expect().
 		Status(http.StatusOK).
 		JSON().Object()
-	favoriteListResp.Value("status_code").Number().Equal(0)
+	favoriteListResp.Value("status_code").Number().IsEqual(0)
 	for _, element := range favoriteListResp.Value("video_list").Array().Iter() {
 		video := element.Object()
 		video.ContainsKey("id")
@@ -41,16 +47,17 @@ func TestFavorite(t *testing.T) {
 	}
 }
 
-func TestComment(t *testing.T) {
-	e := newExpect(t)
+func (s *InteractAPITestSuite) testComment() {
+	t := s.T()
+	e := s.newHTTPExpect(httpexpect.NewDebugPrinter(t, false))
 
 	feedResp := e.GET("/douyin/feed/").Expect().Status(http.StatusOK).JSON().Object()
-	feedResp.Value("status_code").Number().Equal(0)
+	feedResp.Value("status_code").Number().IsEqual(0)
 	feedResp.Value("video_list").Array().Length().Gt(0)
-	firstVideo := feedResp.Value("video_list").Array().First().Object()
+	firstVideo := feedResp.Value("video_list").Array().Value(0).Object()
 	videoId := firstVideo.Value("id").Number().Raw()
 
-	_, token := getTestUserToken(testUserA, e)
+	_, token := getTestUserToken(s.testUserB, s.password, e)
 
 	addCommentResp := e.POST("/douyin/comment/action/").
 		WithQuery("token", token).WithQuery("video_id", videoId).WithQuery("action_type", 1).WithQuery("comment_text", "测试评论").
@@ -58,7 +65,7 @@ func TestComment(t *testing.T) {
 		Expect().
 		Status(http.StatusOK).
 		JSON().Object()
-	addCommentResp.Value("status_code").Number().Equal(0)
+	addCommentResp.Value("status_code").Number().IsEqual(0)
 	addCommentResp.Value("comment").Object().Value("id").Number().Gt(0)
 	commentId := int(addCommentResp.Value("comment").Object().Value("id").Number().Raw())
 
@@ -68,7 +75,7 @@ func TestComment(t *testing.T) {
 		Expect().
 		Status(http.StatusOK).
 		JSON().Object()
-	commentListResp.Value("status_code").Number().Equal(0)
+	commentListResp.Value("status_code").Number().IsEqual(0)
 	containTestComment := false
 	for _, element := range commentListResp.Value("comment_list").Array().Iter() {
 		comment := element.Object()
@@ -89,5 +96,18 @@ func TestComment(t *testing.T) {
 		Expect().
 		Status(http.StatusOK).
 		JSON().Object()
-	delCommentResp.Value("status_code").Number().Equal(0)
+	delCommentResp.Value("status_code").Number().IsEqual(0)
+}
+
+func (s *InteractAPITestSuite) TestAPI() {
+	if !s.Run("testFavorite", s.testFavorite) {
+		return
+	}
+	if !s.Run("testComment", s.testComment) {
+		return
+	}
+}
+
+func TestInteractAPI(t *testing.T) {
+	suite.Run(t, new(InteractAPITestSuite))
 }

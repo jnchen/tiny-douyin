@@ -26,7 +26,8 @@ func intToExcelColName(num int) string {
 func GenerateTestVideos(
 	videoFilesOutputPath,
 	audioFilesPath string,
-	numUsers int,
+	numUsers,
+	maxNumVideosPerUser,
 	poolSize int,
 ) (numGenerated, numToBeGenerated uint32) {
 	if err := os.MkdirAll(videoFilesOutputPath, 0750); err != nil {
@@ -87,7 +88,7 @@ func GenerateTestVideos(
 	numToBeGenerated = 0
 	for i := 0; i < numUsers; i++ {
 		user := intToExcelColName(i)
-		numVideos := uint32(rand.Intn(16) + 1)
+		numVideos := uint32(rand.Intn(maxNumVideosPerUser) + 1)
 		numToBeGenerated += numVideos
 
 		wg.Add(1)
@@ -115,16 +116,18 @@ func GenerateTestVideos(
 
 func main() {
 	var (
-		numUsers       int
-		outputPath     string
-		audioFilesPath string
-		poolSize       int
+		numUsers            int
+		maxNumVideosPerUser int
+		outputPath          string
+		audioFilesPath      string
+		poolSize            int
 	)
 	flag.IntVar(&numUsers, "numUsers", 1, "要生成的用户数")
-	flag.StringVar(&outputPath, "outputPath", "../../public/test_videos", "输出目录")
+	flag.StringVar(&outputPath, "outputPath", "test_videos", "输出目录")
 	flag.StringVar(&audioFilesPath, "audioFilesPath", "countdown_audio", "音频文件目录")
 	flag.IntVar(&poolSize, "poolSize", runtime.NumCPU(), "并发生成视频的协程数")
+	flag.IntVar(&maxNumVideosPerUser, "maxNumVideosPerUser", 8, "每个用户最大生成的视频数")
 	flag.Parse()
 
-	GenerateTestVideos(outputPath, audioFilesPath, numUsers, poolSize)
+	GenerateTestVideos(outputPath, audioFilesPath, numUsers, maxNumVideosPerUser, poolSize)
 }

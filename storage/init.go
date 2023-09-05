@@ -2,6 +2,7 @@ package storage
 
 import (
 	"douyin/config"
+	"fmt"
 	aliyunoss "github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"io"
 	"log"
@@ -13,33 +14,48 @@ type Storage interface {
 	Delete(path ...string) error
 }
 
-var local = &Local{}
+var local *Local
 var oss *OSS
+var store Storage
 
-func GetStorage() Storage {
-	if config.Conf.Storage.OSS.Enable {
-		return oss
-	}
+func GetLocalStorage() *Local {
 	return local
 }
 
-func init() {
-	if config.Conf.Storage.OSS.Enable {
-		log.Println("初始化OSS")
-		oss = &OSS{}
-		var err error
+func GetStorage() Storage {
+	return store
+}
 
+func Init(storageConfig *config.Storage) error {
+	var err error
+
+	local = &Local{
+		localRoot: storageConfig.Local.Path,
+		baseURL:   storageConfig.Local.BaseURL,
+	}
+
+	if storageConfig.OSS.Enable {
+		log.Println("初始化OSS")
+
+		oss = &OSS{
+			bucketName: storageConfig.OSS.BucketName,
+			endpoint:   storageConfig.OSS.Endpoint,
+		}
 		if oss.ossClient, err = aliyunoss.New(
-			config.Conf.Storage.OSS.Endpoint,
-			config.Conf.Storage.OSS.AccessKeyID,
-			config.Conf.Storage.OSS.AccessKeySecret,
+			storageConfig.OSS.Endpoint,
+			storageConfig.OSS.AccessKeyID,
+			storageConfig.OSS.AccessKeySecret,
 		); err != nil {
-			log.Panicln("初始化OSSClient失败", err)
+			return fmt.Errorf("初始化 OSSClient 失败：%w", err)
 		}
 		if oss.ossBucket, err = oss.ossClient.Bucket(
-			config.Conf.Storage.OSS.BucketName,
+			storageConfig.OSS.BucketName,
 		); err != nil {
-			log.Panicln("初始化OSSBucket失败", err)
+			return fmt.Errorf("初始化 OSSBucket 失败：%w", err)
 		}
+		store = oss
+	} else {
+		store = local
 	}
+	return err
 }

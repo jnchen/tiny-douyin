@@ -3,14 +3,18 @@ package test
 import (
 	"github.com/stretchr/testify/assert"
 	"net/http"
-	"testing"
 )
 
-func TestRelation(t *testing.T) {
-	e := newExpect(t)
+type SocialAPITestSuite struct {
+	APITestSuite
+}
 
-	userIdA, tokenA := getTestUserToken(testUserA, e)
-	userIdB, tokenB := getTestUserToken(testUserB, e)
+func (s *SocialAPITestSuite) testRelation() {
+	t := s.T()
+	e := s.newHTTPExpect()
+
+	userIdA, tokenA := getTestUserToken(s.testUserA, s.password, e)
+	userIdB, tokenB := getTestUserToken(s.testUserB, s.password, e)
 
 	relationResp := e.POST("/douyin/relation/action/").
 		WithQuery("token", tokenA).WithQuery("to_user_id", userIdB).WithQuery("action_type", 1).
@@ -18,7 +22,7 @@ func TestRelation(t *testing.T) {
 		Expect().
 		Status(http.StatusOK).
 		JSON().Object()
-	relationResp.Value("status_code").Number().Equal(0)
+	relationResp.Value("status_code").Number().IsEqual(0)
 
 	followListResp := e.GET("/douyin/relation/follow/list/").
 		WithQuery("token", tokenA).WithQuery("user_id", userIdA).
@@ -26,7 +30,7 @@ func TestRelation(t *testing.T) {
 		Expect().
 		Status(http.StatusOK).
 		JSON().Object()
-	followListResp.Value("status_code").Number().Equal(0)
+	followListResp.Value("status_code").Number().IsEqual(0)
 
 	containTestUserB := false
 	for _, element := range followListResp.Value("user_list").Array().Iter() {
@@ -44,7 +48,7 @@ func TestRelation(t *testing.T) {
 		Expect().
 		Status(http.StatusOK).
 		JSON().Object()
-	followerListResp.Value("status_code").Number().Equal(0)
+	followerListResp.Value("status_code").Number().IsEqual(0)
 
 	containTestUserA := false
 	for _, element := range followerListResp.Value("user_list").Array().Iter() {
@@ -57,11 +61,11 @@ func TestRelation(t *testing.T) {
 	assert.True(t, containTestUserA, "Follower test user failed")
 }
 
-func TestChat(t *testing.T) {
-	e := newExpect(t)
+func (s *SocialAPITestSuite) testChat() {
+	e := s.newHTTPExpect()
 
-	userIdA, tokenA := getTestUserToken(testUserA, e)
-	userIdB, tokenB := getTestUserToken(testUserB, e)
+	userIdA, tokenA := getTestUserToken(s.testUserA, s.password, e)
+	userIdB, tokenB := getTestUserToken(s.testUserB, s.password, e)
 
 	messageResp := e.POST("/douyin/message/action/").
 		WithQuery("token", tokenA).WithQuery("to_user_id", userIdB).WithQuery("action_type", 1).WithQuery("content", "Send to UserB").
@@ -69,7 +73,7 @@ func TestChat(t *testing.T) {
 		Expect().
 		Status(http.StatusOK).
 		JSON().Object()
-	messageResp.Value("status_code").Number().Equal(0)
+	messageResp.Value("status_code").Number().IsEqual(0)
 
 	chatResp := e.GET("/douyin/message/chat/").
 		WithQuery("token", tokenA).WithQuery("to_user_id", userIdB).
@@ -77,7 +81,7 @@ func TestChat(t *testing.T) {
 		Expect().
 		Status(http.StatusOK).
 		JSON().Object()
-	chatResp.Value("status_code").Number().Equal(0)
+	chatResp.Value("status_code").Number().IsEqual(0)
 	chatResp.Value("message_list").Array().Length().Gt(0)
 
 	chatResp = e.GET("/douyin/message/chat/").
@@ -86,6 +90,14 @@ func TestChat(t *testing.T) {
 		Expect().
 		Status(http.StatusOK).
 		JSON().Object()
-	chatResp.Value("status_code").Number().Equal(0)
+	chatResp.Value("status_code").Number().IsEqual(0)
 	chatResp.Value("message_list").Array().Length().Gt(0)
 }
+
+func (s *SocialAPITestSuite) TestAPI() {
+	s.Run("testRelation", s.testRelation)
+	s.Run("testChat", s.testChat)
+}
+
+// func TestSocialAPI(t *testing.T) {
+// }

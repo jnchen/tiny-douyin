@@ -1,93 +1,69 @@
 package test
 
 import (
-	"fmt"
-	"math/rand"
+	"douyin/controller"
+	"douyin/model"
+	"github.com/gavv/httpexpect/v2"
+	"github.com/stretchr/testify/suite"
 	"net/http"
 	"path/filepath"
 	"testing"
 )
 
-func TestFeed(t *testing.T) {
-	e := newExpect(t)
+type BaseAPITestSuite struct {
+	APITestSuite
+}
 
-	feedResp := e.GET("/douyin/feed/").Expect().Status(http.StatusOK).JSON().Object()
-	feedResp.Value("status_code").Number().IsEqual(0)
-	feedResp.Value("video_list").Array().Length().Gt(0)
+func (s *BaseAPITestSuite) testUserAction() {
+	e := s.newHTTPExpect(httpexpect.NewDebugPrinter(s.T(), false))
 
-	for _, element := range feedResp.Value("video_list").Array().Iter() {
-		video := element.Object()
-		video.ContainsKey("id")
-		video.ContainsKey("author")
-		video.Value("play_url").String().NotEmpty()
-		video.Value("cover_url").String().NotEmpty()
+	for _, username := range s.testUsersName {
+		registerResp := e.POST("/douyin/user/register/").
+			WithQuery("username", username).WithQuery("password", s.password).
+			WithFormField("username", username).WithFormField("password", s.password).
+			Expect().
+			Status(http.StatusOK).
+			JSON().Object()
+		registerResp.Value("status_code").Number().IsEqual(0)
+		registerResp.Value("user_id").Number().Gt(0)
+		registerResp.Value("token").String().Length().Gt(0)
+
+		loginResp := e.POST("/douyin/user/login/").
+			WithQuery("username", username).WithQuery("password", s.password).
+			WithFormField("username", username).WithFormField("password", s.password).
+			Expect().
+			Status(http.StatusOK).
+			JSON().Object()
+		loginResp.Value("status_code").Number().IsEqual(0)
+		loginResp.Value("user_id").Number().Gt(0)
+		loginResp.Value("token").String().Length().Gt(0)
+
+		token := loginResp.Value("token").String().Raw()
+		userResp := e.GET("/douyin/user/").
+			WithQuery("token", token).
+			Expect().
+			Status(http.StatusOK).
+			JSON().Object()
+		userResp.Value("status_code").Number().IsEqual(0)
+		userInfo := userResp.Value("user").Object()
+		userInfo.NotEmpty()
+		userInfo.Value("id").Number().Gt(0)
+		userInfo.Value("name").String().Length().Gt(0)
+		userInfo.Value("total_favorited").Number().Ge(0)
+		userInfo.Value("work_count").Number().Ge(0)
+		userInfo.Value("favorite_count").Number().Ge(0)
 	}
 }
 
-func TestUserAction(t *testing.T) {
-	e := newExpect(t)
+func (s *BaseAPITestSuite) testPublish() {
+	e := s.newHTTPExpect(httpexpect.NewDebugPrinter(s.T(), false))
+	for i, username := range s.testUsersName {
+		userId, token := getTestUserToken(username, s.password, e)
 
-	// rand.Seed(time.Now().UnixNano())
-	registerValue := fmt.Sprintf("douyin%d", rand.Intn(65536))
-
-	registerResp := e.POST("/douyin/user/register/").
-		WithQuery("username", registerValue).WithQuery("password", registerValue).
-		WithFormField("username", registerValue).WithFormField("password", registerValue).
-		Expect().
-		Status(http.StatusOK).
-		JSON().Object()
-	registerResp.Value("status_code").Number().IsEqual(0)
-	registerResp.Value("user_id").Number().Gt(0)
-	registerResp.Value("token").String().Length().Gt(0)
-
-	loginResp := e.POST("/douyin/user/login/").
-		WithQuery("username", registerValue).WithQuery("password", registerValue).
-		WithFormField("username", registerValue).WithFormField("password", registerValue).
-		Expect().
-		Status(http.StatusOK).
-		JSON().Object()
-	loginResp.Value("status_code").Number().IsEqual(0)
-	loginResp.Value("user_id").Number().Gt(0)
-	loginResp.Value("token").String().Length().Gt(0)
-
-	token := loginResp.Value("token").String().Raw()
-	userResp := e.GET("/douyin/user/").
-		WithQuery("token", token).
-		Expect().
-		Status(http.StatusOK).
-		JSON().Object()
-	userResp.Value("status_code").Number().IsEqual(0)
-	userInfo := userResp.Value("user").Object()
-	userInfo.NotEmpty()
-	userInfo.Value("id").Number().Gt(0)
-	userInfo.Value("name").String().Length().Gt(0)
-}
-
-func TestPublish(t *testing.T) {
-	testVideoDir := filepath.Join("../public", "test_videos")
-	testUserPaths, err := filepath.Glob(filepath.Join(testVideoDir, "[A-Z]*"))
-	if nil != err {
-		t.Fatal(err)
-	}
-
-	e := newExpect(t)
-	eWithoutRequestBodyLogging := newExpectWithoutRequestBodyLogging(t)
-	for _, testUserPath := range testUserPaths {
-		letters := filepath.Base(testUserPath)
-		userId, token := getTestUserToken(letters, e)
-
-		testVideoPaths, err := filepath.Glob(filepath.Join(
-			testVideoDir,
-			letters,
-			"[0-9]*.mp4",
-		))
-		if nil != err {
-			t.Fatal(err)
-		}
-
-		for _, testVideoPath := range testVideoPaths {
-			title := letters + filepath.Base(testVideoPath)
-			publishResp := eWithoutRequestBodyLogging.POST("/douyin/publish/action/").
+		for _, testVideoPath := range s.testVideoFilesPath[i] {
+			// 标题为用户名+文件名，例如 "A1" "AZ14"
+			title := username + filepath.Base(testVideoPath)
+			publishResp := e.POST("/douyin/publish/action/").
 				WithMultipart().
 				WithFile("data", testVideoPath).
 				WithFormField("token", token).
@@ -104,7 +80,7 @@ func TestPublish(t *testing.T) {
 			Status(http.StatusOK).
 			JSON().Object()
 		publishListResp.Value("status_code").Number().IsEqual(0)
-		publishListResp.Value("video_list").Array().Length().IsEqual(len(testVideoPaths))
+		publishListResp.Value("video_list").Array().Length().IsEqual(len(s.testVideoFilesPath[i]))
 
 		for _, element := range publishListResp.Value("video_list").Array().Iter() {
 			video := element.Object()
@@ -115,4 +91,62 @@ func TestPublish(t *testing.T) {
 			video.Value("title").String().NotEmpty()
 		}
 	}
+}
+
+func (s *BaseAPITestSuite) testFeed() {
+	e := s.newHTTPExpect(httpexpect.NewDebugPrinter(s.T(), false))
+	counter := 0
+	var feedResp *httpexpect.Object
+	var nextTime int64 = -1
+	for nextTime != 0 {
+		if nextTime == -1 {
+			feedResp = e.GET("/douyin/feed/").
+				Expect().
+				Status(http.StatusOK).JSON().Object()
+		} else {
+			feedResp = e.GET("/douyin/feed/").
+				WithQuery("latest_time", nextTime).
+				Expect().
+				Status(http.StatusOK).JSON().Object()
+		}
+		feedResp.Value("status_code").Number().IsEqual(0)
+		var feedRespRaw model.FeedResponse
+		feedResp.Decode(&feedRespRaw)
+		nextTime = feedRespRaw.NextTime
+		if nextTime == 0 {
+			feedResp.Value("video_list").Array().Length().IsEqual(0)
+		} else {
+			feedResp.Value("next_time").Number().IsInt(64).Le(nextTime)
+			feedResp.Value("video_list").Array().Length().Le(controller.FeedLimit)
+			for _, element := range feedResp.Value("video_list").Array().Iter() {
+				video := element.Object()
+				video.ContainsKey("id")
+				video.ContainsKey("author")
+				video.Value("play_url").String().NotEmpty()
+				video.Value("cover_url").String().NotEmpty()
+				video.Value("title").String().NotEmpty()
+				video.Value("favorite_count").Number().Ge(0)
+				video.Value("comment_count").Number().Ge(0)
+				video.ContainsKey("is_favorite")
+				counter++
+			}
+		}
+	}
+	s.Require().Equal(s.totalVideoCount, counter)
+}
+
+func (s *BaseAPITestSuite) TestAPI() {
+	if !s.Run("testUserAction", s.testUserAction) {
+		return
+	}
+	if !s.Run("testPublish", s.testPublish) {
+		return
+	}
+	if !s.Run("testFeed", s.testFeed) {
+		return
+	}
+}
+
+func TestBaseAPI(t *testing.T) {
+	suite.Run(t, new(BaseAPITestSuite))
 }
