@@ -31,9 +31,18 @@ func PublishAction(
 	return &video, nil
 }
 
-func PublishDelete(videoId int64) error {
-	result := db.ORM().Delete(&db.Video{}, videoId)
-	if nil != result.Error {
+func PublishDelete(videoId int64) (err error) {
+	tx := db.ORM().Begin()
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+		} else {
+			tx.Commit()
+		}
+	}()
+
+	result := tx.Delete(&db.Video{}, videoId)
+	if result.Error != nil {
 		return result.Error
 	}
 	if result.RowsAffected == 0 {

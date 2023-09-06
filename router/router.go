@@ -31,7 +31,11 @@ func Init(r *gin.Engine) error {
 	apiRouter := r.Group("/douyin")
 
 	// basic apis
-	apiRouter.GET("/feed/", controller.Feed)
+	apiRouter.GET(
+		"/feed/",
+		middleware.Auth(false),
+		controller.Feed,
+	)
 	apiRouter.GET(
 		"/user/",
 		middleware.Auth(true),

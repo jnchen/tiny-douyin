@@ -28,13 +28,13 @@ func UserCreate(username string, password string) (*db.User, error) {
 	if err != nil {
 		return nil, err
 	}
-	passwordMd5, err := util.Md5(password)
+	passwordSHA256, err := util.SHA256(password)
 	if err != nil {
 		return nil, err
 	}
 	user := db.User{
 		Username: username,
-		Password: passwordMd5,
+		Password: passwordSHA256,
 		Avatar: fmt.Sprintf(
 			"https://avatar.marktion.cn/api/avatar/%s?t=github",
 			usernameMd5,

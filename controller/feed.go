@@ -3,6 +3,7 @@ package controller
 import (
 	"douyin/model"
 	"douyin/service"
+	"douyin/util"
 	"github.com/gin-gonic/gin"
 	"github.com/u2takey/go-utils/integer"
 	"net/http"
@@ -29,8 +30,8 @@ func Feed(c *gin.Context) {
 	// log.Println("请求时间", latestTime.UnixMilli())
 
 	var userId int64 = -1
-	user, err := service.CheckLogin(req.Token)
-	if nil == err {
+	user := util.GetUser(c)
+	if user != nil {
 		userId = user.Id
 	}
 

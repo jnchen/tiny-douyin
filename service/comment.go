@@ -12,8 +12,11 @@ func CommentPost(userId int64, videoId int64, content string) (*db.Comment, erro
 		Content: content,
 	}
 	// 创建后加载对象，方便直接调用ToModel方法
-	result := db.ORM().Preload("User").Create(&comment).First(&comment)
-	if nil != result.Error {
+	result := db.ORM().
+		Preload("User").
+		Create(&comment).
+		First(&comment)
+	if result.Error != nil {
 		return nil, result.Error
 	}
 	if result.RowsAffected == 0 {
@@ -22,13 +25,22 @@ func CommentPost(userId int64, videoId int64, content string) (*db.Comment, erro
 	return &comment, nil
 }
 
-func CommentDelete(commentId, videoID int64) error {
+func CommentDelete(commentId, videoID int64) (err error) {
 	var comment = db.Comment{
 		ID:      commentId,
 		VideoID: videoID,
 	}
-	result := db.ORM().Delete(&comment)
-	if nil != result.Error {
+	tx := db.ORM().Begin()
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+		} else {
+			tx.Commit()
+		}
+	}()
+
+	result := tx.Delete(&comment)
+	if result.Error != nil {
 		return result.Error
 	}
 	if result.RowsAffected == 0 {

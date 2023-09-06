@@ -8,8 +8,8 @@ import (
 // User 用户
 type User struct {
 	ID              int64     `gorm:"primary_key;type:bigint;auto_increment;comment:用户id"`
-	Username        string    `gorm:"type:varchar(200);uniqueIndex;comment:用户登录名"`
-	Password        string    `gorm:"type:varchar(100);comment:用户密码"`
+	Username        string    `gorm:"type:varchar(32);uniqueIndex;comment:用户登录名"`
+	Password        string    `gorm:"type:varchar(64);comment:用户密码"`
 	Avatar          string    `gorm:"type:varchar(512);comment:头像地址"`
 	BackgroundImage string    `gorm:"type:varchar(1024);comment:背景地址"`
 	Signature       string    `gorm:"type:varchar(1024);comment:个性签名"`

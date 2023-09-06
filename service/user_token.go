@@ -67,13 +67,13 @@ func CheckLogin(token string) (*model.User, error) {
 }
 
 func UserLogin(username string, password string) (int64, error) {
-	passwordMd5, err := util.Md5(password)
+	passwordSHA256, err := util.SHA256(password)
 	if err != nil {
 		return 0, err
 	}
 	var user db.User
 	result := db.ORM().
-		Where("username = ? and password = ?", username, passwordMd5).
+		Where("username = ? and password = ?", username, passwordSHA256).
 		Limit(1).
 		Find(&user)
 	if nil != result.Error {

@@ -8,7 +8,7 @@ import (
 )
 
 func main() {
-	conf, err := config.Init("config", "yaml")
+	conf, err := config.Init("config.test", "yaml")
 	if err != nil {
 		log.Panicln("初始化配置失败", err)
 	}

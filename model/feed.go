@@ -1,8 +1,8 @@
 package model
 
 type FeedRequest struct {
-	LatestTime int64  `json:"latest_time" form:"latest_time" xml:"latest_time"`
-	Token      string `json:"token" form:"token" xml:"token"`
+	LatestTime int64 `json:"latest_time" form:"latest_time" xml:"latest_time" binding:"gte=0"`
+	// Token      string `json:"token" form:"token" xml:"token"`
 }
 
 type FeedResponse struct {

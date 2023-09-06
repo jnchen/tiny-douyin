@@ -30,6 +30,14 @@ func (s *InteractAPITestSuite) testFavorite() {
 		Status(http.StatusOK).
 		JSON().Object()
 	favoriteResp.Value("status_code").Number().IsEqual(0)
+	favoriteResp = e.POST("/douyin/favorite/action/").
+		WithQuery("token", token).WithQuery("video_id", videoId).WithQuery("action_type", 1).
+		WithFormField("token", token).WithFormField("video_id", videoId).WithFormField("action_type", 1).
+		Expect().
+		Status(http.StatusOK).
+		JSON().Object()
+	favoriteResp.Value("status_code").Number().IsEqual(1)
+	favoriteResp.Value("status_msg").String().IsEqual("重复点赞")
 
 	favoriteListResp := e.GET("/douyin/favorite/list/").
 		WithQuery("token", token).WithQuery("user_id", userId).
@@ -45,6 +53,22 @@ func (s *InteractAPITestSuite) testFavorite() {
 		video.Value("play_url").String().NotEmpty()
 		video.Value("cover_url").String().NotEmpty()
 	}
+
+	favoriteUndoResp := e.POST("/douyin/favorite/action/").
+		WithQuery("token", token).WithQuery("video_id", videoId).WithQuery("action_type", 2).
+		WithFormField("token", token).WithFormField("video_id", videoId).WithFormField("action_type", 2).
+		Expect().
+		Status(http.StatusOK).
+		JSON().Object()
+	favoriteUndoResp.Value("status_code").Number().IsEqual(0)
+	favoriteUndoResp = e.POST("/douyin/favorite/action/").
+		WithQuery("token", token).WithQuery("video_id", videoId).WithQuery("action_type", 2).
+		WithFormField("token", token).WithFormField("video_id", videoId).WithFormField("action_type", 2).
+		Expect().
+		Status(http.StatusOK).
+		JSON().Object()
+	favoriteUndoResp.Value("status_code").Number().IsEqual(1)
+	favoriteUndoResp.Value("status_msg").String().IsEqual("取消点赞失败")
 }
 
 func (s *InteractAPITestSuite) testComment() {
@@ -97,6 +121,16 @@ func (s *InteractAPITestSuite) testComment() {
 		Status(http.StatusOK).
 		JSON().Object()
 	delCommentResp.Value("status_code").Number().IsEqual(0)
+	delCommentResp = e.POST("/douyin/comment/action/").
+		WithQuery("token", token).WithQuery("video_id", videoId).
+		WithQuery("action_type", 2).WithQuery("comment_id", commentId).
+		WithFormField("token", token).WithFormField("video_id", videoId).
+		WithFormField("action_type", 2).WithFormField("comment_id", commentId).
+		Expect().
+		Status(http.StatusOK).
+		JSON().Object()
+	delCommentResp.Value("status_code").Number().IsEqual(1)
+	delCommentResp.Value("status_msg").String().IsEqual("删除评论失败")
 }
 
 func (s *InteractAPITestSuite) TestAPI() {
